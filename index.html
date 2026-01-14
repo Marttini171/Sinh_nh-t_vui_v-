@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Happy Birthday Tiểu My</title>
+    <title>Happy Birthday Ngọc Trang</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -78,6 +78,8 @@
         }
         #brightness-panel label { font-size: 0.9rem; font-weight: bold; color: #FFD700; display: block; margin-bottom: 10px; }
         input[type=range] { width: 100%; cursor: pointer; accent-color: #FFD700; }
+
+        /* ĐÃ XÓA #credit-text */
     </style>
 </head>
 <body>
@@ -94,6 +96,8 @@
         <label>ĐỘ SÁNG: <span id="b-value">100%</span></label>
         <input type="range" id="brightness-slider" min="10" max="200" value="100">
     </div>
+
+    <!-- ĐÃ XÓA DÒNG <div id="credit-text">tiktok: binnanee</div> -->
 
     <div id="camera-wrapper">
         <canvas id="camera-preview"></canvas>
@@ -112,11 +116,11 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
         const CONFIG = {
-            sampleResolution: 600,
-            particleSize: 3.5,
+            sampleResolution: 400,
+            particleSize: 2.8,
             imageGap: 1.8,
-            depthMultiplier: 25.0,
-            morphSpeed: 0.15, // TĂNG TỐC ĐỘ
+            depthMultiplier: 20.0,
+            morphSpeed: 0.08, 
             HOLD_DURATION: 1000,
             FW_SCALE: 9.0, 
             FW_SPEED_MULT: 0.9375 
@@ -142,7 +146,7 @@
         });
 
         let scene, camera, renderer, controls, particles;
-        let particleAttributes = { positions: null, targets: null, photoPositions: null, colors: null, birthdayTargets: null };
+        let particleAttributes = { positions: null, targets: null, photoPositions: null, colors: null, birthdayTargets: null }; // ĐÃ ĐỔI TÊN
         const numberCache = {}; 
         let isInitialized = false;
         let currentMode = 'PHOTO'; 
@@ -159,179 +163,12 @@
         
         let isVideoPlaying = false;
 
-        // Tạo bánh kem 3D đơn giản nhưng hiệu quả
-        function create3DBirthdayCake() {
-            console.log("Đang tạo bánh kem 3D...");
-            
-            // Tạo canvas đơn giản với hình bánh kem
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 400;
-            canvas.height = 400;
-            
-            // Vẽ nền đen
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Vẽ bánh kem 2 tầng
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            
-            // Tầng dưới - lớn hơn
-            const bottomRadius = 150;
-            const bottomGradient = ctx.createRadialGradient(
-                centerX, centerY + 20, 0,
-                centerX, centerY + 20, bottomRadius
-            );
-            bottomGradient.addColorStop(0, '#FFD700');
-            bottomGradient.addColorStop(0.5, '#B8860B');
-            bottomGradient.addColorStop(1, '#8B4513');
-            
-            ctx.beginPath();
-            ctx.arc(centerX, centerY + 20, bottomRadius, 0, Math.PI * 2);
-            ctx.fillStyle = bottomGradient;
-            ctx.fill();
-            
-            // Hiệu ứng 3D cho tầng dưới
-            ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 20; i++) {
-                const angle = (i / 20) * Math.PI * 2;
-                const x1 = centerX + Math.cos(angle) * bottomRadius;
-                const y1 = centerY + 20 + Math.sin(angle) * bottomRadius;
-                const x2 = centerX + Math.cos(angle) * (bottomRadius - 10);
-                const y2 = centerY + 20 + Math.sin(angle) * (bottomRadius - 10);
-                
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-            }
-            
-            // Tầng trên - nhỏ hơn
-            const topRadius = 100;
-            const topGradient = ctx.createRadialGradient(
-                centerX, centerY - 30, 0,
-                centerX, centerY - 30, topRadius
-            );
-            topGradient.addColorStop(0, '#FF69B4');
-            topGradient.addColorStop(0.6, '#FF1493');
-            topGradient.addColorStop(1, '#8B008B');
-            
-            ctx.beginPath();
-            ctx.arc(centerX, centerY - 30, topRadius, 0, Math.PI * 2);
-            ctx.fillStyle = topGradient;
-            ctx.fill();
-            
-            // Hiệu ứng 3D cho tầng trên
-            ctx.strokeStyle = 'rgba(255, 105, 180, 0.3)';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 15; i++) {
-                const angle = (i / 15) * Math.PI * 2;
-                const x1 = centerX + Math.cos(angle) * topRadius;
-                const y1 = centerY - 30 + Math.sin(angle) * topRadius;
-                const x2 = centerX + Math.cos(angle) * (topRadius - 8);
-                const y2 = centerY - 30 + Math.sin(angle) * (topRadius - 8);
-                
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-            }
-            
-            // Vẽ các ngọn nến (18 ngọn)
-            const candleCount = 18;
-            for (let i = 0; i < candleCount; i++) {
-                const angle = (i / candleCount) * Math.PI * 2;
-                const distance = topRadius * 0.7;
-                const candleX = centerX + Math.cos(angle) * distance;
-                const candleY = centerY - 30 + Math.sin(angle) * distance;
-                
-                // Thân nến với hiệu ứng 3D
-                ctx.fillStyle = '#FFFFFF';
-                // Mặt trước nến
-                ctx.fillRect(candleX - 4, candleY - 60, 8, 40);
-                // Mặt bên nến (hiệu ứng 3D)
-                ctx.fillStyle = 'rgba(240, 240, 240, 0.8)';
-                ctx.fillRect(candleX - 4, candleY - 60, 3, 40);
-                
-                // Ngọn lửa
-                const flameGradient = ctx.createRadialGradient(
-                    candleX, candleY - 65, 0,
-                    candleX, candleY - 65, 12
-                );
-                flameGradient.addColorStop(0, '#FFFF00');
-                flameGradient.addColorStop(0.5, '#FFA500');
-                flameGradient.addColorStop(1, 'rgba(255, 69, 0, 0)');
-                
-                ctx.beginPath();
-                ctx.arc(candleX, candleY - 65, 12, 0, Math.PI * 2);
-                ctx.fillStyle = flameGradient;
-                ctx.fill();
-                
-                // Tia sáng
-                ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
-                ctx.lineWidth = 1.5;
-                for (let j = 0; j < 6; j++) {
-                    const rayAngle = (j / 6) * Math.PI * 2;
-                    const rayLength = 18;
-                    ctx.beginPath();
-                    ctx.moveTo(candleX, candleY - 65);
-                    ctx.lineTo(
-                        candleX + Math.cos(rayAngle) * rayLength,
-                        candleY - 65 + Math.sin(rayAngle) * rayLength
-                    );
-                    ctx.stroke();
-                }
-            }
-            
-            // Thêm các hạt ánh sáng sao
-            for (let i = 0; i < 200; i++) {
-                const starX = Math.random() * canvas.width;
-                const starY = Math.random() * canvas.height;
-                const starSize = Math.random() * 3 + 1;
-                const alpha = Math.random() * 0.8 + 0.2;
-                
-                ctx.beginPath();
-                ctx.arc(starX, starY, starSize, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                ctx.fill();
-                
-                // Sao lớn có tia sáng
-                if (starSize > 2) {
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
-                    ctx.lineWidth = 1;
-                    for (let j = 0; j < 4; j++) {
-                        const angle = (j / 4) * Math.PI * 2;
-                        const length = starSize * 2;
-                        ctx.beginPath();
-                        ctx.moveTo(starX, starY);
-                        ctx.lineTo(
-                            starX + Math.cos(angle) * length,
-                            starY + Math.sin(angle) * length
-                        );
-                        ctx.stroke();
-                    }
-                }
-            }
-            
-            // Tạo hình ảnh từ canvas và chuyển thành particles
+        function loadDefaultImage() {
             const img = new Image();
-            img.src = canvas.toDataURL();
-            img.onload = () => { 
-                createParticlesFromImage(img); 
-                cameraUtils.start(); 
-            };
-            img.onerror = () => { 
-                console.error("Lỗi tạo bánh kem");
-                cameraUtils.start();
-            };
-        }
-
-        function createSolidCircleTexture() {
-            const c=document.createElement('canvas'); c.width=64; c.height=64; const ctx=c.getContext('2d');
-            ctx.beginPath(); ctx.arc(32,32,30,0,Math.PI*2); ctx.fillStyle='#FFFFFF'; ctx.fill();
-            const t=new THREE.Texture(c); t.needsUpdate=true; return t;
+            img.crossOrigin = "Anonymous";
+            img.src = 'img.png'; 
+            img.onload = () => { createParticlesFromImage(img); cameraUtils.start(); };
+            img.onerror = () => { alert("LỖI: Không tìm thấy 'img.png'!"); };
         }
 
         function triggerVideo() {
@@ -353,6 +190,12 @@
         }
 
         closeArea.addEventListener('click', stopVideo);
+
+        function createSolidCircleTexture() {
+            const c=document.createElement('canvas'); c.width=64; c.height=64; const ctx=c.getContext('2d');
+            ctx.beginPath(); ctx.arc(32,32,30,0,Math.PI*2); ctx.fillStyle='#FFFFFF'; ctx.fill();
+            const t=new THREE.Texture(c); t.needsUpdate=true; return t;
+        }
 
         function getGlowParticleTexture() {
             const c = document.createElement('canvas'); c.width=32; c.height=32; const ctx=c.getContext('2d');
@@ -382,183 +225,184 @@
             return stars;
         }
 
+        class LinearFirework {
+            constructor() {
+                this.type='Linear'; this.isDead=false; this.isExploded=false;
+                this.x=(Math.random()-0.5)*1200; this.y=-700; this.z=-500+(Math.random()-0.5)*200;
+                this.targetY=400+Math.random()*500;
+                this.speed=(2.2+Math.random()*0.8)*CONFIG.FW_SCALE*CONFIG.FW_SPEED_MULT;
+                this.geo=new THREE.BufferGeometry(); this.geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([this.x,this.y,this.z]),3));
+                this.mat=new THREE.PointsMaterial({color: 0xD4AF37, size: 3.0*CONFIG.FW_SCALE, map: fireworkTexture, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false});
+                this.mesh=new THREE.Points(this.geo, this.mat); scene.add(this.mesh);
+                this.trail=[]; this.color1=new THREE.Color(getRandomFireworkColor()); this.color2=new THREE.Color(getRandomFireworkColor());
+            }
+            update() {
+                if(!this.isExploded){
+                    this.y+=this.speed; this.speed*=0.99;
+                    this.geo.attributes.position.array[1]=this.y; this.geo.attributes.position.needsUpdate=true;
+                    if(Math.random()>0.4) this.spawnTrail();
+                    if(this.speed<(0.1*CONFIG.FW_SCALE) || this.y>=this.targetY) this.explode();
+                } else { this.updateExplosion(); }
+                for(let i=this.trail.length-1; i>=0; i--){
+                    let p=this.trail[i]; p.life-=0.04; p.mesh.position.y-=(0.1*CONFIG.FW_SCALE); p.mat.opacity=p.life;
+                    if(p.life<=0){ scene.remove(p.mesh); p.geo.dispose(); p.mat.dispose(); this.trail.splice(i,1); }
+                }
+            }
+            spawnTrail(){
+                const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([this.x,this.y,this.z]),3));
+                const m=new THREE.PointsMaterial({color:0xcc9966, size:2.0*CONFIG.FW_SCALE, map:fireworkTexture, transparent:true, opacity:0.5, blending:THREE.AdditiveBlending, depthWrite:false});
+                const mesh=new THREE.Points(g,m); scene.add(mesh); this.trail.push({mesh:mesh, geo:g, mat:m, life:1.0});
+            }
+            explode(){
+                this.isExploded=true; scene.remove(this.mesh); this.geo.dispose(); this.mat.dispose();
+                const count=80+Math.floor(Math.random()*40); const total=count*30;
+                const pos=new Float32Array(total*3); const col=new Float32Array(total*3); const vel=new Float32Array(total*3);
+                this.frictions=new Float32Array(total);
+                let idx=0;
+                for(let i=0;i<count;i++){
+                    const theta=Math.random()*Math.PI*2; const phi=Math.acos((Math.random()*2)-1);
+                    const dx=Math.sin(phi)*Math.cos(theta); const dy=Math.sin(phi)*Math.sin(theta); const dz=Math.cos(phi);
+                    const power=(0.8+Math.random()*0.5)*1.5*CONFIG.FW_SCALE*CONFIG.FW_SPEED_MULT;
+                    for(let j=0;j<30;j++){
+                        pos[idx*3]=this.x; pos[idx*3+1]=this.y; pos[idx*3+2]=this.z;
+                        const c=this.color1.clone().lerp(this.color2, j/30);
+                        col[idx*3]=c.r; col[idx*3+1]=c.g; col[idx*3+2]=c.b;
+                        vel[idx*3]=(dx+(Math.random()-0.5)*0.05)*power*(1-j/30*0.6);
+                        vel[idx*3+1]=(dy+(Math.random()-0.5)*0.05)*power*(1-j/30*0.6);
+                        vel[idx*3+2]=(dz+(Math.random()-0.5)*0.05)*power*(1-j/30*0.6);
+                        this.frictions[idx]=0.95+(1-j/30)*0.03; idx++;
+                    }
+                }
+                const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos,3)); g.setAttribute('color', new THREE.BufferAttribute(col,3));
+                const m=new THREE.PointsMaterial({size:1.5*CONFIG.FW_SCALE, map:fireworkTexture, vertexColors:true, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false});
+                this.expMesh=new THREE.Points(g,m); this.expVel=vel; scene.add(this.expMesh);
+            }
+            updateExplosion(){
+                if(!this.expMesh) return;
+                const pos=this.expMesh.geometry.attributes.position.array;
+                for(let i=0; i<pos.length/3; i++){
+                    const ix=i*3; pos[ix]+=this.expVel[ix]; pos[ix+1]+=this.expVel[ix+1]; pos[ix+2]+=this.expVel[ix+2];
+                    this.expVel[ix]*=this.frictions[i]; this.expVel[ix+1]*=this.frictions[i]; this.expVel[ix+2]*=this.frictions[i];
+                    this.expVel[ix+1]-=(0.005*CONFIG.FW_SCALE);
+                }
+                this.expMesh.geometry.attributes.position.needsUpdate=true;
+                this.expMesh.material.opacity-=0.01;
+                if(this.expMesh.material.opacity<=0){ this.isDead=true; scene.remove(this.expMesh); this.expMesh.geometry.dispose(); this.expMesh.material.dispose(); }
+            }
+        }
+        
+        class RealisticFirework {
+            constructor() {
+                this.type='Realistic'; this.isDead=false; this.isExploded=false;
+                this.x=(Math.random()-0.5)*1200; this.y=-700; this.z=-500+(Math.random()-0.5)*200;
+                this.targetY=400+Math.random()*500;
+                this.speed=(0.8+Math.random()*0.4)*CONFIG.FW_SCALE*CONFIG.FW_SPEED_MULT;
+                this.geo=new THREE.BufferGeometry(); this.geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([this.x,this.y,this.z]),3));
+                this.mat=new THREE.PointsMaterial({color:0xffffff, size:4.5*CONFIG.FW_SCALE, map:fireworkTexture, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false});
+                this.mesh=new THREE.Points(this.geo,this.mat); scene.add(this.mesh);
+                this.sparks=[]; this.color=new THREE.Color(getRandomFireworkColor());
+            }
+            update(){
+                if(!this.isExploded){
+                    this.y+=this.speed; this.speed*=0.99;
+                    this.geo.attributes.position.array[1]=this.y; this.geo.attributes.position.needsUpdate=true;
+                    if(this.y>=this.targetY || this.speed<0.1) this.explode();
+                } else {
+                    if(this.expSys){
+                        const pos=this.expSys.geometry.attributes.position.array;
+                        for(let i=0; i<pos.length/3; i++){
+                            const ix=i*3; pos[ix]+=this.vel[ix]; pos[ix+1]+=this.vel[ix+1]; pos[ix+2]+=this.vel[ix+2];
+                            this.vel[ix]*=0.97; this.vel[ix+1]*=0.97; this.vel[ix+2]*=0.97; this.vel[ix+1]-=(0.008*CONFIG.FW_SCALE);
+                        }
+                        this.expSys.geometry.attributes.position.needsUpdate=true;
+                        this.expSys.material.opacity-=0.008;
+                        if(this.expSys.material.opacity<=0) this.isDead=true;
+                    }
+                }
+                if(this.isDead && this.expSys) { scene.remove(this.expSys); this.expSys.geometry.dispose(); this.expSys.material.dispose(); }
+            }
+            explode(){
+                this.isExploded=true; scene.remove(this.mesh); this.geo.dispose(); this.mat.dispose();
+                const count=3000; const pos=new Float32Array(count*3); const vel=[];
+                for(let i=0;i<count;i++){
+                    pos[i*3]=this.x; pos[i*3+1]=this.y; pos[i*3+2]=this.z;
+                    const theta=Math.random()*Math.PI*2; const phi=Math.acos((Math.random()*2)-1);
+                    const p=(Math.random()*1.5+0.2)*1.5*CONFIG.FW_SCALE*CONFIG.FW_SPEED_MULT;
+                    vel.push(Math.sin(phi)*Math.cos(theta)*p, Math.sin(phi)*Math.sin(theta)*p, Math.cos(phi)*p);
+                }
+                const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+                const m=new THREE.PointsMaterial({color:this.color, size:1.8*CONFIG.FW_SCALE, map:fireworkTexture, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false});
+                this.expSys=new THREE.Points(g,m); this.vel=new Float32Array(vel); scene.add(this.expSys);
+            }
+        }
+
         function initThree() {
-            scene = new THREE.Scene(); 
-            scene.background = new THREE.Color(0x020205); 
-            scene.fog = new THREE.FogExp2(0x020205, 0.0003);
-            
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 10000); 
-            camera.position.set(0, 0, 800);
-            
-            renderer = new THREE.WebGLRenderer({antialias:true}); 
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x020205); scene.fog=new THREE.FogExp2(0x020205, 0.0003);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 10000); camera.position.set(0,0,1000);
+            renderer = new THREE.WebGLRenderer({antialias:true}); renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('canvas-container').appendChild(renderer.domElement);
-            
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth/window.innerHeight; 
-                camera.updateProjectionMatrix(); 
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+            window.addEventListener('resize', ()=>{camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);});
             
             starSystem = createStars();
-            create3DBirthdayCake();
+
+            loadDefaultImage();
             animate();
         }
 
         function createParticlesFromImage(image) {
-            const maxDim = CONFIG.sampleResolution; 
-            let w, h; 
+            const maxDim=CONFIG.sampleResolution; let w,h; if(image.width>image.height){w=maxDim;h=Math.round(maxDim*(image.height/image.width));}else{h=maxDim;w=Math.round(maxDim*(image.width/image.height));}
+            const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h; const ctx=canvas.getContext('2d'); ctx.drawImage(image,0,0,w,h);
+            const imgData=ctx.getImageData(0,0,w,h).data; const count=w*h; const pos=new Float32Array(count*3); const col=new Float32Array(count*3); const tar=new Float32Array(count*3);
+            let vIdx=0; const cTex=createSolidCircleTexture();
             
-            if(image.width > image.height) {
-                w = maxDim;
-                h = Math.round(maxDim * (image.height / image.width));
-            } else {
-                h = maxDim;
-                w = Math.round(maxDim * (image.width / image.height));
+            for(let i=0;i<count;i++){
+                if(imgData[i*4+3]<20)continue;
+                const c=i%w; const r_idx=Math.floor(i/w);
+                const x=(c-w/2)*CONFIG.imageGap; const y=-(r_idx-h/2)*CONFIG.imageGap; 
+                const z=(1.0-(imgData[i*4]/255))*CONFIG.depthMultiplier;
+                pos[vIdx*3]=x; pos[vIdx*3+1]=y; pos[vIdx*3+2]=z; tar[vIdx*3]=x; tar[vIdx*3+1]=y; tar[vIdx*3+2]=z;
+                col[vIdx*3]=imgData[i*4]/255; col[vIdx*3+1]=imgData[i*4+1]/255; col[vIdx*3+2]=imgData[i*4+2]/255; vIdx++;
             }
-            
-            const canvas = document.createElement('canvas'); 
-            canvas.width = w; 
-            canvas.height = h; 
-            const ctx = canvas.getContext('2d'); 
-            ctx.drawImage(image, 0, 0, w, h);
-            
-            const imgData = ctx.getImageData(0, 0, w, h).data; 
-            const count = w * h; 
-            const pos = new Float32Array(count * 3); 
-            const col = new Float32Array(count * 3); 
-            const tar = new Float32Array(count * 3);
-            let vIdx = 0; 
-            const cTex = createSolidCircleTexture();
-            
-            for(let i = 0; i < count; i++) {
-                if(imgData[i * 4 + 3] < 20) continue;
-                
-                const c = i % w; 
-                const r_idx = Math.floor(i / w);
-                const x = (c - w/2) * CONFIG.imageGap; 
-                const y = -(r_idx - h/2) * CONFIG.imageGap; 
-                const z = (1.0 - (imgData[i * 4] / 255)) * CONFIG.depthMultiplier;
-                
-                pos[vIdx * 3] = x; 
-                pos[vIdx * 3 + 1] = y; 
-                pos[vIdx * 3 + 2] = z; 
-                tar[vIdx * 3] = x; 
-                tar[vIdx * 3 + 1] = y; 
-                tar[vIdx * 3 + 2] = z;
-                
-                col[vIdx * 3] = imgData[i * 4] / 255; 
-                col[vIdx * 3 + 1] = imgData[i * 4 + 1] / 255; 
-                col[vIdx * 3 + 2] = imgData[i * 4 + 2] / 255; 
-                vIdx++;
-            }
-            
-            particleAttributes.positions = pos.slice(0, vIdx * 3); 
-            particleAttributes.targets = tar.slice(0, vIdx * 3); 
-            particleAttributes.photoPositions = new Float32Array(particleAttributes.targets); 
-            particleAttributes.colors = col.slice(0, vIdx * 3);
-            
-            if(particles) {
-                scene.remove(particles);
-                particles.geometry.dispose();
-                particles.material.dispose();
-            }
-            
-            const geo = new THREE.BufferGeometry(); 
-            geo.setAttribute('position', new THREE.BufferAttribute(particleAttributes.positions, 3)); 
-            geo.setAttribute('color', new THREE.BufferAttribute(particleAttributes.colors, 3));
+            particleAttributes.positions=pos.slice(0,vIdx*3); particleAttributes.targets=tar.slice(0,vIdx*3); particleAttributes.photoPositions=new Float32Array(particleAttributes.targets); particleAttributes.colors=col.slice(0,vIdx*3);
+            if(particles){scene.remove(particles);}
+            const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(particleAttributes.positions,3)); geo.setAttribute('color',new THREE.BufferAttribute(particleAttributes.colors,3));
             
             particles = new THREE.Points(geo, new THREE.PointsMaterial({
-                size: CONFIG.particleSize, 
-                map: cTex, 
-                vertexColors: true, 
-                transparent: true, 
-                opacity: 1.0, 
-                depthWrite: true, 
-                sizeAttenuation: true
+                size: CONFIG.particleSize, map: cTex, vertexColors: true, transparent: true, opacity: 1.0, depthWrite: true, sizeAttenuation: true
             }));
             
-            scene.add(particles); 
-            controls.reset(); 
-            camera.position.set(0, 0, Math.max(w, h) * CONFIG.imageGap);
-            
-            isInitialized = true;
+            scene.add(particles); controls.reset(); camera.position.set(0,0,Math.max(w,h)*CONFIG.imageGap);
+            isInitialized=true;
             generateAllNumbers(vIdx);
-            particleAttributes.birthdayTargets = createBirthdayPoints(vIdx);
-            
-            console.log("Đã tạo particles từ hình ảnh, tổng số:", vIdx);
+            particleAttributes.birthdayTargets = createBirthdayPoints(vIdx); // ĐÃ ĐỔI TÊN
         }
 
         function generateAllNumbers(total) {
-            for(let i = 1; i <= 5; i++) {
-                const s = 200; 
-                const c = document.createElement('canvas'); 
-                c.width = s; 
-                c.height = s;
-                const ctx = c.getContext('2d'); 
-                ctx.fillStyle = '#000'; 
-                ctx.fillRect(0, 0, s, s); 
-                ctx.fillStyle = '#fff'; 
-                ctx.font = 'bold 180px Arial'; 
-                ctx.textAlign = 'center'; 
-                ctx.textBaseline = 'middle'; 
-                ctx.fillText(i.toString(), s/2, s/2);
-                numberCache[i] = scanCanvasToPoints(c, total, s, 2.2, s, true);
+            for(let i=1; i<=5; i++) {
+                const s=200; const c=document.createElement('canvas'); c.width=s; c.height=s;
+                const ctx=c.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,s,s); ctx.fillStyle='#fff'; ctx.font='bold 180px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(i.toString(),s/2,s/2);
+                numberCache[i]=scanCanvasToPoints(c,total,s,2.2,s,true);
             }
         }
-        
-        function createBirthdayPoints(total) {
-            const w = 1000; 
-            const h = 450; 
-            const c = document.createElement('canvas'); 
-            c.width = w; 
-            c.height = h;
-            const ctx = c.getContext('2d'); 
-            ctx.fillStyle = '#000'; 
-            ctx.fillRect(0, 0, w, h); 
-            ctx.fillStyle = '#fff'; 
-            ctx.textAlign = 'center'; 
-            ctx.textBaseline = 'middle';
-            ctx.font = 'bold 80px Arial'; 
-            ctx.fillText("18/01", w/2, h/2 - 90);
-            ctx.font = 'bold 60px Arial'; 
-            ctx.fillText("HAPPY BIRTHDAY", w/2, h/2 - 10);
-            ctx.font = 'bold 50px Arial'; 
-            ctx.fillText("NGÔ TIỂU MY", w/2, h/2 + 70);
-            return scanCanvasToPoints(c, total, w, 1.2, h, true);
+        function createBirthdayPoints(total){ // HÀM MỚI
+            const w=900; const h=400; const c=document.createElement('canvas'); c.width=w; c.height=h;
+            const ctx=c.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.font='bold 55px Arial'; ctx.fillText("HAPPY BIRTHDAY",w/2,h/2-60); 
+            ctx.font='bold 60px Arial'; ctx.fillText("NGUYỄN MẠC NGỌC TRANG",w/2,h/2+20);
+            ctx.font='bold 70px Arial'; ctx.fillText("18/01",w/2,h/2+100);
+            return scanCanvasToPoints(c,total,w,1.5,h,true);
         }
-        
-        function scanCanvasToPoints(canvas, total, w, scale, h, thick) {
-            const ctx = canvas.getContext('2d'); 
-            const d = ctx.getImageData(0, 0, w, h).data; 
-            const p = [];
-            
-            for(let i = 0; i < w * h; i++) {
-                if(d[i * 4] > 128) p.push({
-                    x: (i % w) - w/2,
-                    y: -(Math.floor(i / w) - h/2)
-                });
-            }
-            
-            const t = new Float32Array(total * 3);
-            for(let i = 0; i < total; i++) {
-                const idx = i * 3; 
-                const pt = p[i % p.length];
-                
-                if(i < p.length * 8) {
-                    t[idx] = pt.x * scale; 
-                    t[idx + 1] = pt.y * scale; 
-                    t[idx + 2] = thick ? (Math.random() - 0.5) * 50 : (Math.random() - 0.5) * 200;
-                } else {
-                    t[idx] = 0;
-                    t[idx + 1] = 0;
-                    t[idx + 2] = -8000;
-                }
-            } 
-            return t;
+        function scanCanvasToPoints(canvas,total,w,scale,h,thick){
+            const ctx=canvas.getContext('2d'); const d=ctx.getImageData(0,0,w,h).data; const p=[];
+            for(let i=0;i<w*h;i++){if(d[i*4]>128)p.push({x:(i%w)-w/2,y:-(Math.floor(i/w)-h/2)});}
+            const t=new Float32Array(total*3);
+            for(let i=0;i<total;i++){
+                const idx=i*3; const pt=p[i%p.length];
+                if(i<p.length*8){t[idx]=pt.x*scale; t[idx+1]=pt.y*scale; t[idx+2]=thick?(Math.random()-0.5)*50:(Math.random()-0.5)*200;}
+                else{t[idx]=0;t[idx+1]=0;t[idx+2]=-8000;}
+            } return t;
         }
 
         const videoElement = document.getElementById('input-video');
@@ -566,27 +410,19 @@
 
         function onResults(results) {
             previewCtx.save(); 
-            previewCtx.clearRect(0, 0, cameraPreview.width, cameraPreview.height);
-            previewCtx.drawImage(results.image, 0, 0, cameraPreview.width, cameraPreview.height);
-            
+            previewCtx.clearRect(0,0,cameraPreview.width,cameraPreview.height);
+            previewCtx.drawImage(results.image,0,0,cameraPreview.width,cameraPreview.height);
             let handsData = [];
             if (results.multiHandLandmarks) {
                 for (const landmarks of results.multiHandLandmarks) {
-                    drawConnectors(previewCtx, landmarks, HAND_CONNECTIONS, {color: '#FFD700', lineWidth: 2});
-                    
+                    drawConnectors(previewCtx, landmarks, HAND_CONNECTIONS, {color:'#FFD700', lineWidth:2});
                     let fingers = 0;
-                    const tips = [8, 12, 16, 20]; 
-                    const pips = [6, 10, 14, 18];
-                    
-                    tips.forEach((t, i) => {
-                        if(landmarks[t].y < landmarks[pips[i]].y) fingers++;
-                    });
-                    
+                    const tips=[8,12,16,20]; const pips=[6,10,14,18];
+                    tips.forEach((t,i)=>{if(landmarks[t].y < landmarks[pips[i]].y) fingers++;});
                     if(Math.abs(landmarks[4].x - landmarks[17].x) > Math.abs(landmarks[3].x - landmarks[17].x)) fingers++;
                     handsData.push({fingers, isFist: fingers === 0});
                 }
             }
-            
             previewCtx.restore();
             updateSystemState(handsData);
         }
@@ -606,15 +442,9 @@
                 if (holdStartTime === 0) holdStartTime = Date.now();
                 const elapsed = Date.now() - holdStartTime;
                 loadingBar.style.width = Math.min((elapsed / CONFIG.HOLD_DURATION) * 100, 100) + "%";
-                if (elapsed >= CONFIG.HOLD_DURATION) { 
-                    triggerVideo(); 
-                    holdStartTime = 0; 
-                }
+                if (elapsed >= CONFIG.HOLD_DURATION) { triggerVideo(); holdStartTime = 0; }
             } else {
-                if (holdStartTime !== 0) { 
-                    holdStartTime = 0; 
-                    loadingBar.style.width = "0%"; 
-                }
+                if (holdStartTime !== 0) { holdStartTime = 0; loadingBar.style.width = "0%"; }
                 
                 if (handsData.length > 0) {
                     const p = handsData[0];
@@ -626,7 +456,7 @@
                         } 
                     } 
                     else if (p.fingers === 0) { 
-                        if (currentMode !== 'BIRTHDAY') { 
+                        if (currentMode !== 'BIRTHDAY') {  // ĐÃ ĐỔI TÊN
                             currentMode = 'BIRTHDAY'; 
                             particleAttributes.targets = particleAttributes.birthdayTargets; 
                         } 
@@ -646,176 +476,9 @@
             }
         }
 
-        const hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-        
-        hands.setOptions({ 
-            maxNumHands: 2, 
-            modelComplexity: 0, // GIẢM để tăng tốc độ
-            minDetectionConfidence: 0.5, 
-            minTrackingConfidence: 0.3 // GIẢM để theo dõi nhanh hơn
-        });
-        
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         hands.onResults(onResults);
-
-        class LinearFirework {
-            constructor() {
-                this.type = 'Linear'; 
-                this.isDead = false; 
-                this.isExploded = false;
-                this.x = (Math.random() - 0.5) * 1200; 
-                this.y = -700; 
-                this.z = -500 + (Math.random() - 0.5) * 200;
-                this.targetY = 400 + Math.random() * 500;
-                this.speed = (2.2 + Math.random() * 0.8) * CONFIG.FW_SCALE * CONFIG.FW_SPEED_MULT;
-                
-                this.geo = new THREE.BufferGeometry(); 
-                this.geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([this.x, this.y, this.z]), 3));
-                this.mat = new THREE.PointsMaterial({
-                    color: 0xD4AF37, 
-                    size: 3.0 * CONFIG.FW_SCALE, 
-                    map: fireworkTexture, 
-                    transparent: true, 
-                    blending: THREE.AdditiveBlending, 
-                    depthWrite: false
-                });
-                
-                this.mesh = new THREE.Points(this.geo, this.mat); 
-                scene.add(this.mesh);
-                this.trail = []; 
-                this.color1 = new THREE.Color(getRandomFireworkColor()); 
-                this.color2 = new THREE.Color(getRandomFireworkColor());
-            }
-            
-            update() {
-                if(!this.isExploded) {
-                    this.y += this.speed; 
-                    this.speed *= 0.99;
-                    this.geo.attributes.position.array[1] = this.y; 
-                    this.geo.attributes.position.needsUpdate = true;
-                    
-                    if(Math.random() > 0.4) this.spawnTrail();
-                    if(this.speed < (0.1 * CONFIG.FW_SCALE) || this.y >= this.targetY) this.explode();
-                } else { 
-                    this.updateExplosion(); 
-                }
-                
-                for(let i = this.trail.length - 1; i >= 0; i--) {
-                    let p = this.trail[i]; 
-                    p.life -= 0.04; 
-                    p.mesh.position.y -= (0.1 * CONFIG.FW_SCALE); 
-                    p.mat.opacity = p.life;
-                    
-                    if(p.life <= 0) { 
-                        scene.remove(p.mesh); 
-                        p.geo.dispose(); 
-                        p.mat.dispose(); 
-                        this.trail.splice(i, 1); 
-                    }
-                }
-            }
-            
-            spawnTrail() {
-                const g = new THREE.BufferGeometry(); 
-                g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([this.x, this.y, this.z]), 3));
-                const m = new THREE.PointsMaterial({
-                    color: 0xcc9966, 
-                    size: 2.0 * CONFIG.FW_SCALE, 
-                    map: fireworkTexture, 
-                    transparent: true, 
-                    opacity: 0.5, 
-                    blending: THREE.AdditiveBlending, 
-                    depthWrite: false
-                });
-                const mesh = new THREE.Points(g, m); 
-                scene.add(mesh); 
-                this.trail.push({mesh: mesh, geo: g, mat: m, life: 1.0});
-            }
-            
-            explode() {
-                this.isExploded = true; 
-                scene.remove(this.mesh); 
-                this.geo.dispose(); 
-                this.mat.dispose();
-                
-                const count = 80 + Math.floor(Math.random() * 40); 
-                const total = count * 30;
-                const pos = new Float32Array(total * 3); 
-                const col = new Float32Array(total * 3); 
-                const vel = new Float32Array(total * 3);
-                this.frictions = new Float32Array(total);
-                
-                let idx = 0;
-                for(let i = 0; i < count; i++) {
-                    const theta = Math.random() * Math.PI * 2; 
-                    const phi = Math.acos((Math.random() * 2) - 1);
-                    const dx = Math.sin(phi) * Math.cos(theta); 
-                    const dy = Math.sin(phi) * Math.sin(theta); 
-                    const dz = Math.cos(phi);
-                    const power = (0.8 + Math.random() * 0.5) * 1.5 * CONFIG.FW_SCALE * CONFIG.FW_SPEED_MULT;
-                    
-                    for(let j = 0; j < 30; j++) {
-                        pos[idx * 3] = this.x; 
-                        pos[idx * 3 + 1] = this.y; 
-                        pos[idx * 3 + 2] = this.z;
-                        
-                        const c = this.color1.clone().lerp(this.color2, j / 30);
-                        col[idx * 3] = c.r; 
-                        col[idx * 3 + 1] = c.g; 
-                        col[idx * 3 + 2] = c.b;
-                        
-                        vel[idx * 3] = (dx + (Math.random() - 0.5) * 0.05) * power * (1 - j / 30 * 0.6);
-                        vel[idx * 3 + 1] = (dy + (Math.random() - 0.5) * 0.05) * power * (1 - j / 30 * 0.6);
-                        vel[idx * 3 + 2] = (dz + (Math.random() - 0.5) * 0.05) * power * (1 - j / 30 * 0.6);
-                        this.frictions[idx] = 0.95 + (1 - j / 30) * 0.03; 
-                        idx++;
-                    }
-                }
-                
-                const g = new THREE.BufferGeometry(); 
-                g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); 
-                g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-                const m = new THREE.PointsMaterial({
-                    size: 1.5 * CONFIG.FW_SCALE, 
-                    map: fireworkTexture, 
-                    vertexColors: true, 
-                    transparent: true, 
-                    blending: THREE.AdditiveBlending, 
-                    depthWrite: false
-                });
-                
-                this.expMesh = new THREE.Points(g, m); 
-                this.expVel = vel; 
-                scene.add(this.expMesh);
-            }
-            
-            updateExplosion() {
-                if(!this.expMesh) return;
-                
-                const pos = this.expMesh.geometry.attributes.position.array;
-                for(let i = 0; i < pos.length / 3; i++) {
-                    const ix = i * 3; 
-                    pos[ix] += this.expVel[ix]; 
-                    pos[ix + 1] += this.expVel[ix + 1]; 
-                    pos[ix + 2] += this.expVel[ix + 2];
-                    this.expVel[ix] *= this.frictions[i]; 
-                    this.expVel[ix + 1] *= this.frictions[i]; 
-                    this.expVel[ix + 2] *= this.frictions[i];
-                    this.expVel[ix + 1] -= (0.005 * CONFIG.FW_SCALE);
-                }
-                
-                this.expMesh.geometry.attributes.position.needsUpdate = true;
-                this.expMesh.material.opacity -= 0.01;
-                
-                if(this.expMesh.material.opacity <= 0) { 
-                    this.isDead = true; 
-                    scene.remove(this.expMesh); 
-                    this.expMesh.geometry.dispose(); 
-                    this.expMesh.material.dispose(); 
-                }
-            }
-        }
 
         function animate() {
             requestAnimationFrame(animate);
@@ -824,7 +487,7 @@
             
             if (isInitialized && Math.random() < 0.03) { 
                 if (Math.random() < 0.5) fireworks.push(new LinearFirework());
-                // else fireworks.push(new RealisticFirework());
+                else fireworks.push(new RealisticFirework());
             }
 
             for (let i = fireworks.length - 1; i >= 0; i--) {
@@ -833,18 +496,11 @@
             }
 
             if(!isVideoPlaying) {
-                if(particles && particleAttributes.targets) {
-                    const pos = particles.geometry.attributes.position.array; 
-                    const tar = particleAttributes.targets;
-                    
-                    // SỬA LỖI 2: Tăng tốc độ chuyển đổi
-                    for(let i = 0; i < pos.length; i++) {
-                        pos[i] += (tar[i] - pos[i]) * CONFIG.morphSpeed;
-                    }
-                    
-                    particles.geometry.attributes.position.needsUpdate = true;
+                if(particles && particleAttributes.targets){
+                    const pos=particles.geometry.attributes.position.array; const tar=particleAttributes.targets;
+                    for(let i=0;i<pos.length;i++){pos[i]+=(tar[i]-pos[i])*CONFIG.morphSpeed;}
+                    particles.geometry.attributes.position.needsUpdate=true;
                 }
-                
                 controls.update();
                 renderer.render(scene, camera);
             } else {
@@ -852,22 +508,8 @@
             }
         }
 
-        // Khởi tạo
         initThree();
-        
-        // Khởi tạo camera sau khi Three.js đã sẵn sàng
-        setTimeout(() => {
-            const cameraUtils = new Camera(videoElement, { 
-                onFrame: async () => { 
-                    await hands.send({image: videoElement}); 
-                }, 
-                width: 320, 
-                height: 240 
-            });
-            
-            window.cameraUtils = cameraUtils;
-            console.log("Camera đã được khởi tạo");
-        }, 1000);
+        const cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 });
         
     </script>
 </body>
