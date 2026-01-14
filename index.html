@@ -79,107 +79,10 @@
         #brightness-panel label { font-size: 0.9rem; font-weight: bold; color: #FFD700; display: block; margin-bottom: 10px; }
         input[type=range] { width: 100%; cursor: pointer; accent-color: #FFD700; }
 
-        /* Audio controls */
-        #audio-controls {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10007;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        #audio-indicator {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(10, 10, 20, 0.7);
-            border: 1px solid #FFD700;
-            color: #FFD700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-        }
-        
-        #audio-indicator:hover {
-            background: rgba(255, 215, 0, 0.2);
-            transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-        
-        #audio-indicator.paused {
-            opacity: 0.6;
-        }
-
-        #volume-slider {
-            width: 80px;
-            opacity: 0.3;
-            transition: opacity 0.3s ease;
-            cursor: pointer;
-        }
-
-        #audio-controls:hover #volume-slider,
-        #volume-slider:hover {
-            opacity: 1;
-        }
-
-        #audio-status {
-            position: fixed;
-            top: 70px;
-            right: 20px;
-            background: rgba(10, 10, 20, 0.7);
-            border: 1px solid #FFD700;
-            padding: 8px 12px;
-            border-radius: 6px;
-            color: #FFD700;
-            font-size: 0.8rem;
-            z-index: 10007;
-            max-width: 200px;
-            display: none;
-        }
-        
-        #audio-status.showing {
-            display: block;
-        }
-        
-        #click-to-play {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(10, 10, 20, 0.9);
-            border: 2px solid #FFD700;
-            padding: 20px 30px;
-            border-radius: 15px;
-            color: #FFD700;
-            font-size: 1.2rem;
-            z-index: 10008;
-            cursor: pointer;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-            transition: all 0.3s ease;
-            display: none;
-        }
-        
-        #click-to-play:hover {
-            background: rgba(255, 215, 0, 0.1);
-            transform: translate(-50%, -50%) scale(1.05);
-            box-shadow: 0 0 40px rgba(255, 215, 0, 0.5);
-        }
+        /* ĐÃ XÓA #credit-text */
     </style>
 </head>
 <body>
-
-    <div id="click-to-play">
-        <div style="font-size: 2rem; margin-bottom: 10px;">🎵</div>
-        <div>NHẤN ĐỂ BẮT ĐẦU NHẠC</div>
-        <div style="font-size: 0.8rem; margin-top: 10px; opacity: 0.7;">(Trình duyệt yêu cầu tương tác để phát nhạc)</div>
-    </div>
 
     <video id="celebration-video" playsinline muted loop>
         <source src="video.mp4" type="video/mp4">
@@ -194,12 +97,7 @@
         <input type="range" id="brightness-slider" min="10" max="200" value="100">
     </div>
 
-    <!-- Audio controls -->
-    <div id="audio-controls">
-        <div id="audio-indicator" title="Nhấn để tạm dừng/tiếp tục">♪</div>
-        <input type="range" id="volume-slider" min="0" max="100" value="50" title="Điều chỉnh âm lượng">
-    </div>
-    <div id="audio-status">Đang tải nhạc...</div>
+    <!-- ĐÃ XÓA <div id="credit-text">tiktok: binnanee</div> -->
 
     <div id="camera-wrapper">
         <canvas id="camera-preview"></canvas>
@@ -208,13 +106,6 @@
 
     <video id="input-video" style="display:none"></video>
     <div id="canvas-container"></div>
-
-    <!-- Audio element - CHỈ CẦN audio.mp3 -->
-    <audio id="birthday-audio" loop>
-        <!-- Chỉ cần file audio.mp3 trong cùng thư mục -->
-        <source src="audio.mp3" type="audio/mpeg">
-        Trình duyệt của bạn không hỗ trợ thẻ audio.
-    </audio>
 
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
@@ -238,180 +129,13 @@
         const FIREWORK_PALETTE = [0xFFD700, 0xC0C0C0, 0xB8860B, 0xCD5C5C, 0x8B0000, 0x4682B4, 0x191970, 0xF0E68C];
         function getRandomFireworkColor() { return FIREWORK_PALETTE[Math.floor(Math.random() * FIREWORK_PALETTE.length)]; }
 
-        // Audio setup
-        const birthdayAudio = document.getElementById('birthday-audio');
-        const audioIndicator = document.getElementById('audio-indicator');
-        const volumeSlider = document.getElementById('volume-slider');
-        const audioStatus = document.getElementById('audio-status');
-        const clickToPlay = document.getElementById('click-to-play');
-
-        // Brightness controls
         const bPanel = document.getElementById('brightness-panel');
         const bSlider = document.getElementById('brightness-slider');
         const bValue = document.getElementById('b-value');
 
-        // Biến trạng thái
-        let isAudioLoaded = false;
-        let isAudioPlaying = false;
-
-        // Function to load and play audio
-        function initializeAudio() {
-            console.log("Đang khởi tạo audio...");
-            
-            // Đặt volume ban đầu
-            birthdayAudio.volume = volumeSlider.value / 100;
-            
-            // Kiểm tra xem file audio có tồn tại không
-            birthdayAudio.addEventListener('canplaythrough', function() {
-                console.log("Audio có thể phát được");
-                isAudioLoaded = true;
-                audioStatus.textContent = "Nhạc đã sẵn sàng";
-                audioStatus.classList.add('showing');
-                
-                // Hiển thị nút "click to play" nếu autoplay bị chặn
-                setTimeout(() => {
-                    if (!isAudioPlaying) {
-                        clickToPlay.style.display = 'block';
-                    }
-                }, 1000);
-            });
-            
-            birthdayAudio.addEventListener('error', function(e) {
-                console.error("Lỗi tải audio:", e);
-                audioStatus.textContent = "Lỗi: Không tìm thấy file audio.mp3";
-                audioStatus.classList.add('showing');
-                
-                // Hiển thị hướng dẫn
-                setTimeout(() => {
-                    audioStatus.textContent = "Vui lòng đảm bảo có file audio.mp3 trong thư mục";
-                }, 3000);
-            });
-            
-            birthdayAudio.addEventListener('playing', function() {
-                console.log("Audio đang phát");
-                isAudioPlaying = true;
-                clickToPlay.style.display = 'none';
-                audioIndicator.innerHTML = "♫";
-                audioIndicator.classList.remove('paused');
-                audioIndicator.title = "Nhạc đang phát - Nhấn để tạm dừng";
-                audioStatus.classList.remove('showing');
-            });
-            
-            birthdayAudio.addEventListener('pause', function() {
-                console.log("Audio tạm dừng");
-                isAudioPlaying = false;
-                audioIndicator.innerHTML = "♪";
-                audioIndicator.classList.add('paused');
-                audioIndicator.title = "Nhạc đã tạm dừng - Nhấn để phát";
-            });
-            
-            // Bắt đầu tải audio
-            birthdayAudio.load();
-        }
-
-        // Start audio with user interaction
-        function startAudioWithInteraction() {
-            if (!isAudioLoaded) {
-                console.log("Audio chưa sẵn sàng");
-                return;
-            }
-            
-            birthdayAudio.play().then(() => {
-                console.log("Audio bắt đầu phát thành công");
-                isAudioPlaying = true;
-                clickToPlay.style.display = 'none';
-            }).catch(error => {
-                console.log("Không thể phát audio tự động:", error);
-                clickToPlay.style.display = 'block';
-            });
-        }
-
-        // Toggle play/pause
-        function toggleAudio() {
-            if (!isAudioLoaded) {
-                audioStatus.textContent = "Đang tải nhạc...";
-                audioStatus.classList.add('showing');
-                return;
-            }
-            
-            if (isAudioPlaying) {
-                birthdayAudio.pause();
-            } else {
-                birthdayAudio.play().catch(error => {
-                    console.error("Lỗi phát nhạc:", error);
-                    audioStatus.textContent = "Lỗi phát nhạc. Nhấn lại để thử.";
-                    audioStatus.classList.add('showing');
-                });
-            }
-        }
-
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM đã tải xong, khởi tạo audio...");
-            initializeAudio();
-        });
-
-        // Click to play overlay
-        clickToPlay.addEventListener('click', function() {
-            startAudioWithInteraction();
-            // Cũng bắt đầu Three.js nếu chưa
-            if (!window.appInitialized) {
-                initThree();
-                window.appInitialized = true;
-            }
-        });
-
-        // Audio indicator click
-        audioIndicator.addEventListener('click', toggleAudio);
-
-        // Volume control
-        volumeSlider.addEventListener('input', function(e) {
-            const volume = e.target.value / 100;
-            birthdayAudio.volume = volume;
-            
-            // Hiển thị volume tạm thời
-            audioStatus.textContent = "Âm lượng: " + e.target.value + "%";
-            audioStatus.classList.add('showing');
-            setTimeout(() => {
-                if (!isAudioPlaying && !birthdayAudio.error) {
-                    audioStatus.classList.remove('showing');
-                }
-            }, 1000);
-        });
-
-        // Auto-start on any user interaction (fallback)
-        document.addEventListener('click', function startOnFirstClick() {
-            if (!isAudioPlaying && isAudioLoaded) {
-                startAudioWithInteraction();
-            }
-            document.removeEventListener('click', startOnFirstClick);
-        }, { once: true });
-
-        // Brightness controls
         document.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() === 'p') {
                 bPanel.style.display = (bPanel.style.display === 'block') ? 'none' : 'block';
-            }
-            // Audio control with M key
-            if (e.key.toLowerCase() === 'm') {
-                toggleAudio();
-            }
-            // Volume controls with arrow keys
-            if (e.key === 'ArrowUp') {
-                let newVolume = Math.min(100, parseInt(volumeSlider.value) + 10);
-                volumeSlider.value = newVolume;
-                birthdayAudio.volume = newVolume / 100;
-                audioStatus.textContent = "Âm lượng: " + newVolume + "%";
-                audioStatus.classList.add('showing');
-                setTimeout(() => audioStatus.classList.remove('showing'), 1000);
-            }
-            if (e.key === 'ArrowDown') {
-                let newVolume = Math.max(0, parseInt(volumeSlider.value) - 10);
-                volumeSlider.value = newVolume;
-                birthdayAudio.volume = newVolume / 100;
-                audioStatus.textContent = "Âm lượng: " + newVolume + "%";
-                audioStatus.classList.add('showing');
-                setTimeout(() => audioStatus.classList.remove('showing'), 1000);
             }
         });
 
@@ -422,7 +146,7 @@
         });
 
         let scene, camera, renderer, controls, particles;
-        let particleAttributes = { positions: null, targets: null, photoPositions: null, colors: null, birthdayTargets: null };
+        let particleAttributes = { positions: null, targets: null, photoPositions: null, colors: null, birthdayTargets: null }; // Đã đổi tên từ newYearTargets thành birthdayTargets
         const numberCache = {}; 
         let isInitialized = false;
         let currentMode = 'PHOTO'; 
@@ -439,8 +163,8 @@
         
         let isVideoPlaying = false;
 
-        // Thay đổi 1: Tạo bánh kem ánh sáng sao thay vì load hình ảnh
-        function loadStarlightCake() {
+        // THAY ĐỔI 1: Tạo bánh kem ánh sáng sao thay vì load hình ảnh từ file
+        function createStarlightCake() {
             console.log("Đang tạo bánh kem ánh sáng sao...");
             
             // Tạo canvas ảo để vẽ bánh kem
@@ -453,64 +177,64 @@
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Vẽ bánh kem (hình tròn với gradient)
+            // Vẽ bánh kem 2 tầng với ánh sáng sao
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
             const radius = 150;
             
-            // Tầng bánh dưới cùng
-            const gradient1 = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+            // Tầng bánh dưới cùng (lớn hơn)
+            const gradient1 = ctx.createRadialGradient(centerX, centerY + 20, 0, centerX, centerY + 20, radius);
             gradient1.addColorStop(0, '#FFD700'); // Vàng tươi ở trung tâm
             gradient1.addColorStop(0.5, '#B8860B'); // Vàng đậm
             gradient1.addColorStop(1, '#8B4513'); // Nâu
             
             ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY + 20, radius, 0, Math.PI * 2);
             ctx.fillStyle = gradient1;
             ctx.fill();
             
-            // Tầng bánh trên
-            const gradient2 = ctx.createRadialGradient(centerX, centerY - 40, 0, centerX, centerY - 40, radius * 0.7);
+            // Tầng bánh trên (nhỏ hơn)
+            const gradient2 = ctx.createRadialGradient(centerX, centerY - 30, 0, centerX, centerY - 30, radius * 0.7);
             gradient2.addColorStop(0, '#FF69B4'); // Hồng
             gradient2.addColorStop(0.6, '#FF1493'); // Hồng đậm
             gradient2.addColorStop(1, '#8B008B'); // Tím đậm
             
             ctx.beginPath();
-            ctx.arc(centerX, centerY - 40, radius * 0.7, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY - 30, radius * 0.7, 0, Math.PI * 2);
             ctx.fillStyle = gradient2;
             ctx.fill();
             
-            // Vẽ các ngọn nến
+            // Vẽ các ngọn nến (18 ngọn - tượng trưng cho 18/01)
             const candleCount = 18;
             for (let i = 0; i < candleCount; i++) {
                 const angle = (i / candleCount) * Math.PI * 2;
                 const candleX = centerX + Math.cos(angle) * (radius * 0.6);
-                const candleY = centerY - 40 + Math.sin(angle) * (radius * 0.6);
+                const candleY = centerY - 30 + Math.sin(angle) * (radius * 0.6);
                 
                 // Thân nến
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(candleX - 3, candleY - 60, 6, 40);
                 
-                // Ngọn lửa
+                // Ngọn lửa với ánh sáng sao
                 const flameGradient = ctx.createRadialGradient(
                     candleX, candleY - 65, 0,
-                    candleX, candleY - 65, 10
+                    candleX, candleY - 65, 12
                 );
                 flameGradient.addColorStop(0, '#FFFF00'); // Vàng
                 flameGradient.addColorStop(0.5, '#FFA500'); // Cam
-                flameGradient.addColorStop(1, '#FF4500'); // Cam đỏ
+                flameGradient.addColorStop(1, 'rgba(255, 69, 0, 0)'); // Cam đỏ trong suốt
                 
                 ctx.beginPath();
-                ctx.arc(candleX, candleY - 65, 8, 0, Math.PI * 2);
+                ctx.arc(candleX, candleY - 65, 12, 0, Math.PI * 2);
                 ctx.fillStyle = flameGradient;
                 ctx.fill();
                 
-                // Tia sáng từ ngọn lửa
-                ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
-                ctx.lineWidth = 1;
+                // Tia sáng từ ngọn lửa (ánh sáng sao)
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)';
+                ctx.lineWidth = 1.5;
                 for (let j = 0; j < 8; j++) {
                     const rayAngle = (j / 8) * Math.PI * 2;
-                    const rayLength = 15;
+                    const rayLength = 20;
                     ctx.beginPath();
                     ctx.moveTo(candleX, candleY - 65);
                     ctx.lineTo(
@@ -521,25 +245,30 @@
                 }
             }
             
-            // Thêm các ánh sáng sao lấp lánh
-            for (let i = 0; i < 200; i++) {
+            // Thêm các ánh sáng sao lấp lánh xung quanh bánh
+            for (let i = 0; i < 300; i++) {
                 const starX = Math.random() * canvas.width;
                 const starY = Math.random() * canvas.height;
-                const starSize = Math.random() * 3 + 1;
-                const alpha = Math.random() * 0.8 + 0.2;
+                const starSize = Math.random() * 4 + 1;
+                const alpha = Math.random() * 0.9 + 0.1;
+                const starColor = Math.random() > 0.5 ? '#FFFFFF' : 
+                                 Math.random() > 0.5 ? '#FFD700' : '#FF69B4';
                 
                 ctx.beginPath();
                 ctx.arc(starX, starY, starSize, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fillStyle = starColor;
+                ctx.globalAlpha = alpha;
                 ctx.fill();
+                ctx.globalAlpha = 1.0;
                 
                 // Hiệu ứng tia sáng cho sao lớn
-                if (starSize > 2) {
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
+                if (starSize > 2.5) {
+                    ctx.strokeStyle = starColor;
+                    ctx.globalAlpha = alpha * 0.6;
                     ctx.lineWidth = 1;
-                    for (let j = 0; j < 4; j++) {
-                        const angle = (j / 4) * Math.PI * 2;
-                        const length = starSize * 2;
+                    for (let j = 0; j < 6; j++) {
+                        const angle = (j / 6) * Math.PI * 2;
+                        const length = starSize * 3;
                         ctx.beginPath();
                         ctx.moveTo(starX, starY);
                         ctx.lineTo(
@@ -548,6 +277,7 @@
                         );
                         ctx.stroke();
                     }
+                    ctx.globalAlpha = 1.0;
                 }
             }
             
@@ -556,38 +286,12 @@
             img.src = canvas.toDataURL();
             img.onload = () => { 
                 createParticlesFromImage(img); 
-                // Bắt đầu camera sau khi audio đã sẵn sàng
-                if (isAudioLoaded) {
-                    startCamera();
-                } else {
-                    setTimeout(() => startCamera(), 1000);
-                }
+                cameraUtils.start(); 
             };
             img.onerror = () => { 
                 console.error("Lỗi tạo bánh kem ánh sáng sao");
-                // Vẫn bắt đầu camera nếu có lỗi
-                startCamera();
+                cameraUtils.start();
             };
-        }
-
-        // SỬA LỖI: Thêm hàm startCamera
-        function startCamera() {
-            if (window.cameraUtils) {
-                window.cameraUtils.start();
-            } else {
-                console.log("Camera utils chưa được khởi tạo");
-                // Tạo camera utils nếu chưa có
-                if (videoElement && hands) {
-                    window.cameraUtils = new Camera(videoElement, { 
-                        onFrame: async () => { 
-                            await hands.send({image: videoElement}); 
-                        }, 
-                        width: 320, 
-                        height: 240 
-                    });
-                    window.cameraUtils.start();
-                }
-            }
         }
 
         function triggerVideo() {
@@ -596,13 +300,7 @@
             celebVideo.style.display = 'block';
             closeArea.style.display = 'block'; 
             celebVideo.currentTime = 0;
-            
-            // Tạm dừng nhạc khi phát video
-            if (isAudioPlaying) {
-                birthdayAudio.pause();
-            }
-            
-            celebVideo.play().catch(e => console.error("Lỗi phát video:", e));
+            celebVideo.play().catch(e => console.error(e));
         }
 
         function stopVideo() {
@@ -612,11 +310,6 @@
             closeArea.style.display = 'none';
             holdStartTime = 0; 
             loadingBar.style.width = '0%';
-            
-            // Tiếp tục nhạc khi dừng video
-            if (isAudioLoaded && !isAudioPlaying) {
-                birthdayAudio.play().catch(e => console.error("Không thể tiếp tục nhạc:", e));
-            }
         }
 
         closeArea.addEventListener('click', stopVideo);
@@ -777,8 +470,8 @@
             
             starSystem = createStars();
 
-            // Thay đổi 1: Gọi hàm tạo bánh kem ánh sáng sao
-            loadStarlightCake();
+            // THAY ĐỔI 1: Gọi hàm tạo bánh kem thay vì loadDefaultImage
+            createStarlightCake();
             animate();
         }
 
@@ -807,7 +500,7 @@
             scene.add(particles); controls.reset(); camera.position.set(0,0,Math.max(w,h)*CONFIG.imageGap);
             isInitialized=true;
             generateAllNumbers(vIdx);
-            particleAttributes.birthdayTargets = createBirthdayPoints(vIdx);
+            particleAttributes.birthdayTargets = createBirthdayPoints(vIdx); // Đã đổi từ createNewYearPoints
         }
 
         function generateAllNumbers(total) {
@@ -818,7 +511,7 @@
             }
         }
         
-        // Thay đổi 2: Đã sửa thành "18/01 HAPPY BIRTHDAY NGÔ TIỂU MY"
+        // THAY ĐỔI 2: Đã sửa thành "18/01 HAPPY BIRTHDAY NGÔ TIỂU MY"
         function createBirthdayPoints(total){
             const w=1000; const h=450; const c=document.createElement('canvas'); c.width=w; c.height=h;
             const ctx=c.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -890,6 +583,7 @@
                         } 
                     } 
                     else if (p.fingers === 0) { 
+                        // THAY ĐỔI: Đã đổi từ 'NEWYEAR' thành 'BIRTHDAY'
                         if (currentMode !== 'BIRTHDAY') { 
                             currentMode = 'BIRTHDAY'; 
                             particleAttributes.targets = particleAttributes.birthdayTargets; 
@@ -942,30 +636,8 @@
             }
         }
 
-        // Initialize Three.js after user interaction
-        window.startApp = function() {
-            if (!window.appInitialized) {
-                initThree();
-                window.appInitialized = true;
-                
-                // Khởi tạo camera utils
-                window.cameraUtils = new Camera(videoElement, { 
-                    onFrame: async () => { 
-                        await hands.send({image: videoElement}); 
-                    }, 
-                    width: 320, 
-                    height: 240 
-                });
-            }
-        };
-
-        // Start app when user clicks to play audio
-        clickToPlay.addEventListener('click', window.startApp);
-        
-        // Auto-start app if audio is already playing
-        if (isAudioPlaying) {
-            window.startApp();
-        }
+        initThree();
+        const cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 });
         
     </script>
 </body>
