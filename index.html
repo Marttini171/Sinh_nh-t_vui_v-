@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday Tiểu My</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0a0a1a; font-family: 'Segoe UI', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; }
+        
+        #camera-wrapper {
+            position: absolute; bottom: 20px; left: 20px;
+            width: 160px; height: 120px;
+            z-index: 10002;
+            pointer-events: none; 
+        }
+
+        #camera-preview {
+            width: 100%; height: 100%;
+            border: 2px solid #FFD700; 
+            border-radius: 6px;
+            transform: scaleX(-1);
+            background: #000;
+            opacity: 0.9;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); 
+        }
+
+        #loading-bar {
+            position: absolute; bottom: 0; left: 0;
+            height: 4px; width: 0%; 
+            background: #FFD700; 
+            transition: width 0.1s linear;
+            z-index: 10003;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        #celebration-video {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: contain; 
+            z-index: 9999; display: none; background: black;
+            pointer-events: none;
+        }
+        
+        #close-area {
+            position: fixed; top: 0; right: 0; width: 100px; height: 100px;
+            z-index: 10003; display: none; cursor: pointer;
+        }
+        
+        #close-icon {
+            position: absolute; top: 20px; right: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1.5rem; font-weight: bold;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        #close-area:hover #close-icon {
+            color: rgba(255, 255, 255, 1);
+            transform: scale(1.2);
+            text-shadow: 0 0 10px #FFD700;
+        }
+
+        #brightness-panel {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 300px; background: rgba(10, 10, 20, 0.9);
+            border: 1px solid #FFD700; padding: 15px; border-radius: 10px;
+            z-index: 10005; color: white; display: none;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            text-align: center;
+        }
+        #brightness-panel label { font-size: 0.9rem; font-weight: bold; color: #FFD700; display: block; margin-bottom: 10px; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #FFD700; }
+
+        #audio-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10007;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #audio-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(10, 10, 20, 0.7);
+            border: 1px solid #FFD700;
+            color: #FFD700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        
+        #audio-indicator:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        #audio-indicator.paused {
+            opacity: 0.6;
+        }
+
+        #volume-slider {
+            width: 80px;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+        }
+
+        #audio-controls:hover #volume-slider,
+        #volume-slider:hover {
+            opacity: 1;
+        }
+
+        #audio-status {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: rgba(10, 10, 20, 0.7);
+            border: 1px solid #FFD700;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: #FFD700;
+            font-size: 0.8rem;
+            z-index: 10007;
+            max-width: 200px;
+            display: none;
+        }
+        
+        #audio-status.showing {
+            display: block;
+        }
+        
+        #click-to-play {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 20, 0.9);
+            border: 2px solid #FFD700;
+            padding: 20px 30px;
+            border-radius: 15px;
+            color: #FFD700;
+            font-size: 1.2rem;
+            z-index: 10008;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+            display: none;
+        }
+        
+        #click-to-play:hover {
+            background: rgba(255, 215, 0, 0.1);
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.5);
+        }
+
+        #info-text {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            z-index: 10001;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="info-text">
+        ✨ Hiển thị 1-5 ngón tay: Đổi số<br>
+        ✊ Nắm tay: Hiển thị thông điệp<br>
+        ✊✊ Hai nắm tay giữ 1 giây: Phát video
+    </div>
+
+    <div id="click-to-play">
+        <div style="font-size: 2rem; margin-bottom: 10px;">🎵</div>
+        <div>NHẤN ĐỂ BẮT ĐẦU NHẠC</div>
+        <div style="font-size: 0.8rem; margin-top: 10px; opacity: 0.7;">(Trình duyệt yêu cầu tương tác để phát nhạc)</div>
+    </div>
+
+    <video id="celebration-video" playsinline muted loop>
+        <source src="video.mp4" type="video/mp4">
+    </video>
+
+    <div id="close-area" title="Đóng Video">
+        <div id="close-icon">✖</div>
+    </div>
+
+    <div id="brightness-panel">
+        <label>ĐỘ SÁNG: <span id="b-value">100%</span></label>
+        <input type="range" id="brightness-slider" min="10" max="200" value="100">
+    </div>
+
+    <!-- Audio controls -->
+    <div id="audio-controls">
+        <div id="audio-indicator" title="Nhấn để tạm dừng/tiếp tục">♪</div>
+        <input type="range" id="volume-slider" min="0" max="100" value="50" title="Điều chỉnh âm lượng">
+    </div>
+    <div id="audio-status">Đang tải nhạc...</div>
+
+    <div id="camera-wrapper">
+        <canvas id="camera-preview"></canvas>
+        <div id="loading-bar"></div>
+    </div>
+
+    <video id="input-video" style="display:none"></video>
+    <div id="canvas-container"></div>
+
+    <!-- Audio element -->
+    <audio id="birthday-audio" loop>
+        <source src="audio.mp3" type="audio/mpeg">
+        Trình duyệt của bạn không hỗ trợ thẻ audio.
+    </audio>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const CONFIG = {
+            sampleResolution: 600,
+            particleSize: 3.5,
+            imageGap: 1.8,
+            depthMultiplier: 25.0,
+            morphSpeed: 0.08, 
+            HOLD_DURATION: 1000,
+            FW_SCALE: 9.0, 
+            FW_SPEED_MULT: 0.9375 
+        };
+
+        const FIREWORK_PALETTE = [0xFFD700, 0xC0C0C0, 0xB8860B, 0xCD5C5C, 0x8B0000, 0x4682B4, 0x191970, 0xF0E68C];
+        function getRandomFireworkColor() { return FIREWORK_PALETTE[Math.floor(Math.random() * FIREWORK_PALETTE.length)]; }
+
+        // Audio setup
+        const birthdayAudio = document.getElementById('birthday-audio');
+        const audioIndicator = document.getElementById('audio-indicator');
+        const volumeSlider = document.getElementById('volume-slider');
+        const audioStatus = document.getElementById('audio-status');
+        const clickToPlay = document.getElementById('click-to-play');
+
+        // Brightness controls
+        const bPanel = document.getElementById('brightness-panel');
+        const bSlider = document.getElementById('brightness-slider');
+        const bValue = document.getElementById('b-value');
+
+        // Biến trạng thái
+        let isAudioLoaded = false;
+        let isAudioPlaying = false;
+
+        // Function to load and play audio
+        function initializeAudio() {
+            console.log("Đang khởi tạo audio...");
+            
+            // Đặt volume ban đầu
+            birthdayAudio.volume = volumeSlider.value / 100;
+            
+            // Kiểm tra xem file audio có tồn tại không
+            birthdayAudio.addEventListener('canplaythrough', function() {
+                console.log("Audio có thể phát được");
+                isAudioLoaded = true;
+                audioStatus.textContent = "Nhạc đã sẵn sàng";
+                audioStatus.classList.add('showing');
+                
+                // Hiển thị nút "click to play" nếu autoplay bị chặn
+                setTimeout(() => {
+                    if (!isAudioPlaying) {
+                        clickToPlay.style.display = 'block';
+                    }
+                }, 1000);
+            });
+            
+            birthdayAudio.addEventListener('error', function(e) {
+                console.error("Lỗi tải audio:", e);
+                audioStatus.textContent = "Lỗi: Không tìm thấy file audio.mp3";
+                audioStatus.classList.add('showing');
+                
+                // Hiển thị hướng dẫn
+                setTimeout(() => {
+                    audioStatus.textContent = "Vui lòng đảm bảo có file audio.mp3 trong thư mục";
+                }, 3000);
+            });
+            
+            birthdayAudio.addEventListener('playing', function() {
+                console.log("Audio đang phát");
+                isAudioPlaying = true;
+                clickToPlay.style.display = 'none';
+                audioIndicator.innerHTML = "♫";
+                audioIndicator.classList.remove('paused');
+                audioIndicator.title = "Nhạc đang phát - Nhấn để tạm dừng";
+                audioStatus.classList.remove('showing');
+            });
+            
+            birthdayAudio.addEventListener('pause', function() {
+                console.log("Audio tạm dừng");
+                isAudioPlaying = false;
+                audioIndicator.innerHTML = "♪";
+                audioIndicator.classList.add('paused');
+                audioIndicator.title = "Nhạc đã tạm dừng - Nhấn để phát";
+            });
+            
+            // Bắt đầu tải audio
+            birthdayAudio.load();
+        }
+
+        // Start audio with user interaction
+        function startAudioWithInteraction() {
+            if (!isAudioLoaded) {
+                console.log("Audio chưa sẵn sàng");
+                return;
+            }
+            
+            birthdayAudio.play().then(() => {
+                console.log("Audio bắt đầu phát thành công");
+                isAudioPlaying = true;
+                clickToPlay.style.display = 'none';
+            }).catch(error => {
+                console.log("Không thể phát audio tự động:", error);
+                clickToPlay.style.display = 'block';
+            });
+        }
+
+        // Toggle play/pause
+        function toggleAudio() {
+            if (!isAudioLoaded) {
+                audioStatus.textContent = "Đang tải nhạc...";
+                audioStatus.classList.add('showing');
+                return;
+            }
+            
+            if (isAudioPlaying) {
+                birthdayAudio.pause();
+            } else {
+                birthdayAudio.play().catch(error => {
+                    console.error("Lỗi phát nhạc:", error);
+                    audioStatus.textContent = "Lỗi phát nhạc. Nhấn lại để thử.";
+                    audioStatus.classList.add('showing');
+                });
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM đã tải xong, khởi tạo audio...");
+            initializeAudio();
+        });
+
+        // Click to play overlay
+        clickToPlay.addEventListener('click', function() {
+            startAudioWithInteraction();
+            // Cũng bắt đầu Three.js nếu chưa
+            if (!window.appInitialized) {
+                initThree();
+                window.appInitialized = true;
+            }
+        });
+
+        // Audio indicator click
+        audioIndicator.addEventListener('click', toggleAudio);
+
+        // Volume control
+        volumeSlider.addEventListener('input', function(e) {
+            const volume = e.target.value / 100;
+            birthdayAudio.volume = volume;
+            
+            // Hiển thị volume tạm thời
+            audioStatus.textContent = "Âm lượng: " + e.target.value + "%";
+            audioStatus.classList.add('showing');
+            setTimeout(() => {
+                if (!isAudioPlaying && !birthdayAudio.error) {
+                    audioStatus.classList.remove('showing');
+                }
+            }, 1000);
+        });
+
+        // Auto-start on any user interaction (fallback)
+        document.addEventListener('click', function startOnFirstClick() {
+            if (!isAudioPlaying && isAudioLoaded) {
+                startAudioWithInteraction();
+            }
+            document.removeEventListener('click', startOnFirstClick);
+        }, { once: true });
+
+        // Brightness controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'p') {
+                bPanel.style.display = (bPanel.style.display === 'block') ? 'none' : 'block';
+            }
+            // Audio control with M key
+            if (e.key.toLowerCase() === 'm') {
+                toggleAudio();
+            }
+            // Volume controls with arrow keys
+            if (e.key === 'ArrowUp') {
+                let newVolume = Math.min(100, parseInt(volumeSlider.value) + 10);
+                volumeSlider.value = newVolume;
+                birthdayAudio.volume = newVolume / 100;
+                audioStatus.textContent = "Âm lượng: " + newVolume + "%";
+                audioStatus.classList.add('showing');
+                setTimeout(() => audioStatus.classList.remove('showing'), 1000);
+            }
+            if (e.key === 'ArrowDown') {
+                let newVolume = Math.max(0, parseInt(volumeSlider.value) - 10);
+                volumeSlider.value = newVolume;
+                birthdayAudio.volume = newVolume / 100;
+                audioStatus.textContent = "Âm lượng: " + newVolume + "%";
+                audioStatus.classList.add('showing');
+                setTimeout(() => audioStatus.classList.remove('showing'), 1000);
+            }
+        });
+
+        bSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            bValue.innerText = val + "%";
+            document.body.style.filter = `brightness(${val}%)`;
+        });
+
+        let scene, camera, renderer, controls, particles;
+        let particleAttributes = { positions: null, targets: null, cakePositions: null, colors: null, birthdayTargets: null };
+        const numberCache = {}; 
+        let isInitialized = false;
+        let currentMode = 'CAKE'; 
+        let targetContent = 'CAKE'; 
+        let holdStartTime = 0;
+        
+        const fireworks = [];
+        let starSystem;
+
+        const celebVideo = document.getElementById('celebration-video');
+        const closeArea = document.getElementById('close-area');
+        const loadingBar = document.getElementById('loading-bar');
+        const cameraPreview = document.getElementById('camera-preview');
+        
+        let isVideoPlaying = false;
+
+        // Tạo bánh kem ánh sáng sao
+        function createStarlightCake() {
+            console.log("Tạo bánh kem ánh sáng sao...");
+            
+            // Tạo dữ liệu bánh kem với ánh sáng sao
+            const cakeData = generateCakeGeometry();
+            
+            // Tạo particles từ dữ liệu bánh kem
+            createParticlesFromCakeData(cakeData);
+            
+            // Bắt đầu camera sau khi audio đã sẵn sàng
+            if (isAudioLoaded) {
+                cameraUtils.start();
+            } else {
+                setTimeout(() => cameraUtils.start(), 1000);
+            }
+        }
+
+        function generateCakeGeometry() {
+            const points = [];
+            const colors = [];
+            
+            // Màu sắc cho bánh kem ánh sáng sao
+            const cakeColors = [
+                new THREE.Color(0xFFD700), // Vàng
+                new THREE.Color(0xFF69B4), // Hồng
+                new THREE.Color(0x9370DB), // Tím
+                new THREE.Color(0x00CED1), // Ngọc lam
+                new THREE.Color(0xFFA500)  // Cam
+            ];
+            
+            // Tầng bánh dưới cùng (lớn nhất)
+            const bottomRadius = 150;
+            const bottomHeight = 40;
+            const layers = 5;
+            
+            // Tạo các tầng bánh
+            for (let layer = 0; layer < layers; layer++) {
+                const radius = bottomRadius - layer * 25;
+                const height = -100 + layer * 35;
+                const color = cakeColors[layer % cakeColors.length];
+                
+                // Tạo mặt trên của tầng bánh (ánh sáng sao)
+                for (let i = 0; i < 200; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = Math.sqrt(Math.random()) * radius * 0.8;
+                    const x = Math.cos(angle) * r;
+                    const y = height + bottomHeight/2;
+                    const z = Math.sin(angle) * r;
+                    
+                    points.push(x, y, z);
+                    colors.push(color.r, color.g, color.b);
+                }
+                
+                // Tạo mặt xung quanh của tầng bánh
+                for (let i = 0; i < 150; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const heightRatio = Math.random();
+                    const x = Math.cos(angle) * radius;
+                    const y = height - bottomHeight/2 + heightRatio * bottomHeight;
+                    const z = Math.sin(angle) * radius;
+                    
+                    points.push(x, y, z);
+                    colors.push(color.r * 0.8, color.g * 0.8, color.b * 0.8);
+                }
+            }
+            
+            // Tạo ngọn nến
+            const candleHeight = 80;
+            const candleRadius = 8;
+            const candleCount = 18;
+            
+            for (let c = 0; c < candleCount; c++) {
+                const angle = (c / candleCount) * Math.PI * 2;
+                const radius = 50;
+                const baseX = Math.cos(angle) * radius;
+                const baseY = 40;
+                const baseZ = Math.sin(angle) * radius;
+                
+                // Thân nến (trắng)
+                for (let i = 0; i < 30; i++) {
+                    const heightRatio = Math.random();
+                    const x = baseX + (Math.random() - 0.5) * candleRadius;
+                    const y = baseY + heightRatio * candleHeight;
+                    const z = baseZ + (Math.random() - 0.5) * candleRadius;
+                    
+                    points.push(x, y, z);
+                    colors.push(1, 1, 1); // Màu trắng
+                }
+                
+                // Ngọn lửa nến (vàng-cam)
+                for (let i = 0; i < 20; i++) {
+                    const x = baseX + (Math.random() - 0.5) * candleRadius;
+                    const y = baseY + candleHeight + Math.random() * 20;
+                    const z = baseZ + (Math.random() - 0.5) * candleRadius;
+                    
+                    // Màu lửa (vàng đến cam)
+                    const flameColor = new THREE.Color().setHSL(
+                        0.08 + Math.random() * 0.05, // Hue: vàng-cam
+                        0.9, // Saturation cao
+                        0.7 + Math.random() * 0.3 // Độ sáng
+                    );
+                    
+                    points.push(x, y, z);
+                    colors.push(flameColor.r, flameColor.g, flameColor.b);
+                }
+            }
+            
+            // Thêm các hạt ánh sáng sao lấp lánh xung quanh bánh
+            for (let i = 0; i < 500; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 200 + Math.random() * 100;
+                const height = -50 + Math.random() * 150;
+                const x = Math.cos(angle) * distance;
+                const y = height;
+                const z = Math.sin(angle) * distance;
+                
+                points.push(x, y, z);
+                
+                // Màu ngẫu nhiên ánh sáng sao
+                const starColor = new THREE.Color().setHSL(
+                    Math.random(), // Hue ngẫu nhiên
+                    0.8 + Math.random() * 0.2, // Saturation cao
+                    0.8 + Math.random() * 0.2 // Độ sáng cao
+                );
+                colors.push(starColor.r, starColor.g, starColor.b);
+            }
+            
+            return { points, colors };
+        }
+
+        function createParticlesFromCakeData(cakeData) {
+            const count = cakeData.points.length / 3;
+            const pos = new Float32Array(cakeData.points);
+            const col = new Float32Array(cakeData.colors);
+            const tar = new Float32Array(pos); // Vị trí đích giống vị trí ban đầu
+            
+            particleAttributes.positions = pos;
+            particleAttributes.targets = tar;
+            particleAttributes.cakePositions = new Float32Array(tar);
+            particleAttributes.colors = col;
+            
+            if (particles) {
+                scene.remove(particles);
+            }
+            
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(particleAttributes.positions, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(particleAttributes.colors, 3));
+            
+            // Tạo texture cho ánh sáng sao lấp lánh
+            const starTexture = createStarGlowTexture();
+            
+            particles = new THREE.Points(geo, new THREE.PointsMaterial({
+                size: CONFIG.particleSize,
+                map: starTexture,
+                vertexColors: true,
+                transparent: true,
+                opacity: 1.0,
+                depthWrite: true,
+                sizeAttenuation: true,
+                blending: THREE.AdditiveBlending // Hiệu ứng ánh sáng cộng
+            }));
+            
+            scene.add(particles);
+            controls.reset();
+            camera.position.set(0, 0, 600);
+            
+            isInitialized = true;
+            generateAllNumbers(count);
+            particleAttributes.birthdayTargets = createBirthdayPoints(count);
+        }
+
+        function createStarGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            // Tạo gradient cho ánh sáng sao
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.6)');
+            gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.2)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            
+            // Thêm các tia sáng nhỏ
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const length = 20;
+                const x2 = 32 + Math.cos(angle) * length;
+                const y2 = 32 + Math.sin(angle) * length;
+                
+                ctx.beginPath();
+                ctx.moveTo(32, 32);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function triggerVideo() {
+            if (isVideoPlaying) return;
+            isVideoPlaying = true;
+            celebVideo.style.display = 'block';
+            closeArea.style.display = 'block'; 
+            celebVideo.currentTime = 0;
+            
+            // Tạm dừng nhạc khi phát video
+            if (isAudioPlaying) {
+                birthdayAudio.pause();
+            }
+            
+            celebVideo.play().catch(e => console.error("Lỗi phát video:", e));
+        }
+
+        function stopVideo() {
+            isVideoPlaying = false;
+            celebVideo.pause();
+            celebVideo.style.display = 'none';
+            closeArea.style.display = 'none';
+            holdStartTime = 0; 
+            loadingBar.style.width = '0%';
+            
+            // Tiếp tục nhạc khi dừng video
+            if (isAudioLoaded && !isAudioPlaying) {
+                birthdayAudio.play().catch(e => console.error("Không thể tiếp tục nhạc:", e));
+            }
+        }
+
+        closeArea.addEventListener('click', stopVideo);
+
+        function getGlowParticleTexture() {
+            const c = document.createElement('canvas'); c.width=32; c.height=32; const ctx=c.getContext('2d');
+            const g = ctx.createRadialGradient(16,16,0,16,16,16);
+            g.addColorStop(0,'rgba(255,255,255,1)'); 
+            g.addColorStop(0.5,'rgba(255,255,255,0.2)');
+            g.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.fillStyle=g; ctx.fillRect(0,0,32,32);
+            const t=new THREE.Texture(c); t.needsUpdate=true; return t;
+        }
+        const fireworkTexture = getGlowParticleTexture();
+
+        function createStars() {
+            const geo = new THREE.BufferGeometry();
+            const count = 3000; const pos = new Float32Array(count*3); const sizes = new Float32Array(count);
+            for(let i=0; i<count; i++) {
+                pos[i*3] = (Math.random()-0.5)*4000;
+                pos[i*3+1] = (Math.random()-0.5)*4000;
+                pos[i*3+2] = -1000 + (Math.random()-0.5)*1000;
+                sizes[i] = Math.random() * 4.0;
+            }
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            const mat = new THREE.PointsMaterial({ color: 0xE0E0E0, size: 2.0, map: fireworkTexture, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+            const stars = new THREE.Points(geo, mat);
+            scene.add(stars);
+            return stars;
+        }
+
+        class LinearFirework {
+            constructor() {
+                this.type='Linear'; this.isDead=false; this.isExploded=false;
+                this.x=(Math.random()-0.5)*1200; this.y=-700; this.z=-500+(Math.random()-0.5)*200;
+                this.targetY=400+Math.random()*500;
+                this.speed=(2.2+Math.random()*0.8)*CONFIG.FW_SCALE*CONFIG.FW_SPEED_MULT;
+                this.geo=new THREE.BufferGeometry(); this.geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([this.x,this.y,this.z]),3));
+                this.mat=new THREE.PointsMaterial({color: 0xD4AF37, size: 3.0*CONFIG.FW_SCALE, map: fireworkTexture, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false});
+                this.mesh=new THREE.Points(this.geo, this.mat); scene.add(this.mesh);
+                this.trail=[]; this.color1=new THREE.Color(getRandomFireworkColor()); this.color2=new THREE.Color(getRandomFireworkColor());
+            }
+            update() {
+                if(!this.isExploded){
+                    this.y+=this.speed; this.speed*=0.99;
+                    this.geo.attributes.position.array[1]=this.y; this.geo.attributes.position.needsUpdate=true;
+                    if(Math.random()>0.4) this.spawnTrail();
+                    if(this.speed<(0.1*CONFIG.FW_SCALE) || this.y>=this.targetY) this.explode();
+                } else { this.updateExplosion(); }
+                for(let i=this.trail.length-1; i>=0; i--){
+                    let p=this.trail[i]; p.life-=0.04; p.mesh.position.y-=(0.1*CONFIG.FW_SCALE); p.mat.opacity=p.life;
+                    if(p.life<=0){ scene.remove(p.mesh); p.geo.dispose(); p.mat.dispose(); this.trail.splice(i,1); }
+                }
+            }
+            spawnTrail(){
+                const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([this.x,this.y,this.z]),3));
+                const m=new THREE.PointsMaterial({color:0xcc9966, size:2.0*CONFIG.FW_SCALE, map:fireworkTexture, transparent:true, opacity:0.5, blending:THREE.AdditiveBlending, depthWrite:false});
+                const mesh=new THREE.Points(g,m); scene.add(mesh); this.trail.push({mesh:mesh, geo:g, mat:m, life:1.0});
+            }
+            explode(){
+                this.isExploded=true; scene.remove(this.mesh); this.geo.dispose(); this.mat.dispose();
+                const count=80+Math.floor(Math.random()*40); const total=count*30;
+                const pos=new Float32Array(total*3); const col=new Float32Array(total*3); const vel=new Float32Array(total*3);
+                this.frictions=new Float32Array(total);
+                let idx=0;
+                for(let i=0;i<count;i++){
+                    const theta=Math.random()*Math.PI*2; const phi=Math.acos((Math.random()*2)-1);
+                    const dx=Math.sin(phi)*Math.cos(theta); const dy=Math.sin(phi)*Math.sin(theta); const dz=Math.cos(phi);
+                    const power=(0.8+Math.random()*0.5)*1.5*CONFIG.FW_SCALE*CONFIG.FW_SPEED_MULT;
+                    for(let j=0;j<30;j++){
+                        pos[idx*3]=this.x; pos[idx*3+1]=this.y; pos[idx*3+2]=this.z;
+                        const c=this.color1.clone().lerp(this.color2, j/30);
+                        col[idx*3]=c.r; col[idx*3+1]=c.g; col[idx*3+2]=c.b;
+                        vel[idx*3]=(dx+(Math.random()-0.5)*0.05)*power*(1-j/30*0.6);
+                        vel[idx*3+1]=(dy+(Math.random()-0.5)*0.05)*power*(1-j/30*0.6);
+                        vel[idx*3+2]=(dz+(Math.random()-0.5)*0.05)*power*(1-j/30*0.6);
+                        this.frictions[idx]=0.95+(1-j/30)*0.03; idx++;
+                    }
+                }
+                const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos,3)); g.setAttribute('color', new THREE.BufferAttribute(col,3));
+                const m=new THREE.PointsMaterial({size:1.5*CONFIG.FW_SCALE, map:fireworkTexture, vertexColors:true, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false});
+                this.expMesh=new THREE.Points(g,m); this.expVel=vel; scene.add(this.expMesh);
+            }
+            updateExplosion(){
+                if(!this.expMesh) return;
+                const pos=this.expMesh.geometry.attributes.position.array;
+                for(let i=0; i<pos.length/3; i++){
+                    const ix=i*3; pos[ix]+=this.expVel[ix]; pos[ix+1]+=this.expVel[ix+1]; pos[ix+2]+=this.expVel[ix+2];
+                    this.expVel[ix]*=this.frictions[i]; this.expVel[ix+1]*=this.frictions[i]; this.expVel[ix+2]*=this.frictions[i];
+                    this.expVel[ix+1]-=(0.005*CONFIG.FW_SCALE);
+                }
+                this.expMesh.geometry.attributes.position.needsUpdate=true;
+                this.expMesh.material.opacity-=0.01;
+                if(this.expMesh.material.opacity<=0){ this.isDead=true; scene.remove(this.expMesh); this.expMesh.geometry.dispose(); this.expMesh.material.dispose(); }
+            }
+        }
+        
+        class RealisticFirework {
+            constructor() {
+                this.type='Realistic'; this.isDead=false; this.isExploded=false;
+                this.x=(Math.random()-0.5)*1200; this.y=-700; this.z=-500+(Math.random()-0.5)*200;
+                this.targetY=400+Math.random()*500;
+                this.speed=(0.8+Math.random()*0.4)*CONFIG.FW_SCALE*CONFIG.FW_SPEED_MULT;
+                this.geo=new THREE.BufferGeometry(); this.geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([this.x,this.y,this.z]),3));
+                this.mat=new THREE.PointsMaterial({color:0xffffff, size:4.5*CONFIG.FW_SCALE, map:fireworkTexture, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false});
+                this.mesh=new THREE.Points(this.geo,this.mat); scene.add(this.mesh);
+                this.sparks=[]; this.color=new THREE.Color(getRandomFireworkColor());
+            }
+            update(){
+                if(!this.isExploded){
+                    this.y+=this.speed; this.speed*=0.99;
+                    this.geo.attributes.position.array[1]=this.y; this.geo.attributes.position.needsUpdate=true;
+                    if(this.y>=this.targetY || this.speed<0.1) this.explode();
+                } else {
+                    if(this.expSys){
+                        const pos=this.expSys.geometry.attributes.position.array;
+                        for(let i=0; i<pos.length/3; i++){
+                            const ix=i*3; pos[ix]+=this.vel[ix]; pos[ix+1]+=this.vel[ix+1]; pos[ix+2]+=this.vel[ix+2];
+                            this.vel[ix]*=0.97; this.vel[ix+1]*=0.97; this.vel[ix+2]*=0.97; this.vel[ix+1]-=(0.008*CONFIG.FW_SCALE);
+                        }
+                        this.expSys.geometry.attributes.position.needsUpdate=true;
+                        this.expSys.material.opacity-=0.008;
+                        if(this.expSys.material.opacity<=0) this.isDead=true;
+                    }
+                }
+                if(this.isDead && this.expSys) { scene.remove(this.expSys); this.expSys.geometry.dispose(); this.expSys.material.dispose(); }
+            }
+            explode(){
+                this.isExploded=true; scene.remove(this.mesh); this.geo.dispose(); this.mat.dispose();
+                const count=3000; const pos=new Float32Array(count*3); const vel=[];
+                for(let i=0;i<count;i++){
+                    pos[i*3]=this.x; pos[i*3+1]=this.y; pos[i*3+2]=this.z;
+                    const theta=Math.random()*Math.PI*2; const phi=Math.acos((Math.random()*2)-1);
+                    const p=(Math.random()*1.5+0.2)*1.5*CONFIG.FW_SCALE*CONFIG.FW_SPEED_MULT;
+                    vel.push(Math.sin(phi)*Math.cos(theta)*p, Math.sin(phi)*Math.sin(theta)*p, Math.cos(phi)*p);
+                }
+                const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+                const m=new THREE.PointsMaterial({color:this.color, size:1.8*CONFIG.FW_SCALE, map:fireworkTexture, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false});
+                this.expSys=new THREE.Points(g,m); this.vel=new Float32Array(vel); scene.add(this.expSys);
+            }
+        }
+
+        function initThree() {
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x0a0a1a); scene.fog=new THREE.FogExp2(0x0a0a1a, 0.0003);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 10000); camera.position.set(0,0,1000);
+            renderer = new THREE.WebGLRenderer({antialias:true}); renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            window.addEventListener('resize', ()=>{camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight);});
+            
+            starSystem = createStars();
+
+            createStarlightCake();
+            animate();
+        }
+
+        function generateAllNumbers(total) {
+            for(let i=1; i<=5; i++) {
+                const s=200; const c=document.createElement('canvas'); c.width=s; c.height=s;
+                const ctx=c.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,s,s); ctx.fillStyle='#fff'; ctx.font='bold 180px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(i.toString(),s/2,s/2);
+                numberCache[i]=scanCanvasToPoints(c,total,s,2.2,s,true);
+            }
+        }
+        
+        // Đã sửa thành "18/01 HAPPY BIRTHDAY NGÔ TIỂU MY"
+        function createBirthdayPoints(total){
+            const w=1000; const h=450; const c=document.createElement('canvas'); c.width=w; c.height=h;
+            const ctx=c.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.font='bold 80px Arial'; ctx.fillText("18/01",w/2,h/2-90);
+            ctx.font='bold 60px Arial'; ctx.fillText("HAPPY BIRTHDAY",w/2,h/2-10);
+            ctx.font='bold 50px Arial'; ctx.fillText("NGÔ TIỂU MY",w/2,h/2+70);
+            return scanCanvasToPoints(c,total,w,1.2,h,true);
+        }
+        
+        function scanCanvasToPoints(canvas,total,w,scale,h,thick){
+            const ctx=canvas.getContext('2d'); const d=ctx.getImageData(0,0,w,h).data; const p=[];
+            for(let i=0;i<w*h;i++){if(d[i*4]>128)p.push({x:(i%w)-w/2,y:-(Math.floor(i/w)-h/2)});}
+            const t=new Float32Array(total*3);
+            for(let i=0;i<total;i++){
+                const idx=i*3; const pt=p[i%p.length];
+                if(i<p.length*8){t[idx]=pt.x*scale; t[idx+1]=pt.y*scale; t[idx+2]=thick?(Math.random()-0.5)*50:(Math.random()-0.5)*200;}
+                else{t[idx]=0;t[idx+1]=0;t[idx+2]=-8000;}
+            } return t;
+        }
+
+        const videoElement = document.getElementById('input-video');
+        const previewCtx = cameraPreview.getContext('2d');
+
+        function onResults(results) {
+            previewCtx.save(); 
+            previewCtx.clearRect(0,0,cameraPreview.width,cameraPreview.height);
+            previewCtx.drawImage(results.image,0,0,cameraPreview.width,cameraPreview.height);
+            let handsData = [];
+            if (results.multiHandLandmarks) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawConnectors(previewCtx, landmarks, HAND_CONNECTIONS, {color:'#FFD700', lineWidth:2});
+                    let fingers = 0;
+                    const tips=[8,12,16,20]; const pips=[6,10,14,18];
+                    tips.forEach((t,i)=>{if(landmarks[t].y < landmarks[pips[i]].y) fingers++;});
+                    if(Math.abs(landmarks[4].x - landmarks[17].x) > Math.abs(landmarks[3].x - landmarks[17].x)) fingers++;
+                    handsData.push({fingers, isFist: fingers === 0});
+                }
+            }
+            previewCtx.restore();
+            updateSystemState(handsData);
+        }
+
+        function updateSystemState(handsData) {
+            if (!isInitialized) return;
+            
+            let videoTriggerFists = handsData.filter(h => h.fingers <= 1).length; 
+            
+            if (isVideoPlaying) {
+                if (handsData.length === 0) return;
+                if (videoTriggerFists >= 2) return;
+                stopVideo();
+            }
+
+            if (handsData.length >= 2 && videoTriggerFists >= 2) {
+                if (holdStartTime === 0) holdStartTime = Date.now();
+                const elapsed = Date.now() - holdStartTime;
+                loadingBar.style.width = Math.min((elapsed / CONFIG.HOLD_DURATION) * 100, 100) + "%";
+                if (elapsed >= CONFIG.HOLD_DURATION) { triggerVideo(); holdStartTime = 0; }
+            } else {
+                if (holdStartTime !== 0) { holdStartTime = 0; loadingBar.style.width = "0%"; }
+                
+                if (handsData.length > 0) {
+                    const p = handsData[0];
+                    if (p.fingers >= 1 && p.fingers <= 5) { 
+                        if (currentMode !== 'NUMBER' || targetContent !== p.fingers) { 
+                            currentMode = 'NUMBER'; 
+                            targetContent = p.fingers; 
+                            particleAttributes.targets = numberCache[p.fingers]; 
+                        } 
+                    } 
+                    else if (p.fingers === 0) { 
+                        if (currentMode !== 'BIRTHDAY') { 
+                            currentMode = 'BIRTHDAY'; 
+                            particleAttributes.targets = particleAttributes.birthdayTargets; 
+                        } 
+                    }
+                    else { 
+                        if (currentMode !== 'CAKE') { 
+                            currentMode = 'CAKE'; 
+                            particleAttributes.targets = particleAttributes.cakePositions; 
+                        } 
+                    }
+                } else {
+                    if (currentMode !== 'CAKE') { 
+                        currentMode = 'CAKE'; 
+                        particleAttributes.targets = particleAttributes.cakePositions; 
+                    }
+                }
+            }
+        }
+
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+        hands.onResults(onResults);
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if(starSystem) starSystem.rotation.y += 0.0002;
+            
+            if (isInitialized && Math.random() < 0.03) { 
+                if (Math.random() < 0.5) fireworks.push(new LinearFirework());
+                else fireworks.push(new RealisticFirework());
+            }
+
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                fireworks[i].update();
+                if (fireworks[i].isDead) fireworks.splice(i, 1);
+            }
+
+            // Tạo hiệu ứng lấp lánh cho các hạt bánh kem
+            if(particles && particleAttributes.colors && !isVideoPlaying) {
+                const colors = particles.geometry.attributes.color.array;
+                const time = Date.now() * 0.001;
+                
+                for(let i = 0; i < colors.length; i += 3) {
+                    // Tạo hiệu ứng nhấp nháy ngẫu nhiên
+                    if(Math.random() < 0.01) {
+                        const flicker = 0.7 + Math.random() * 0.3;
+                        colors[i] *= flicker;
+                        colors[i+1] *= flicker;
+                        colors[i+2] *= flicker;
+                    }
+                }
+                particles.geometry.attributes.color.needsUpdate = true;
+            }
+
+            if(!isVideoPlaying) {
+                if(particles && particleAttributes.targets){
+                    const pos=particles.geometry.attributes.position.array; const tar=particleAttributes.targets;
+                    for(let i=0;i<pos.length;i++){pos[i]+=(tar[i]-pos[i])*CONFIG.morphSpeed;}
+                    particles.geometry.attributes.position.needsUpdate=true;
+                }
+                controls.update();
+                renderer.render(scene, camera);
+            } else {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // Initialize Three.js after user interaction
+        window.startApp = function() {
+            if (!window.appInitialized) {
+                initThree();
+                window.appInitialized = true;
+                cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 });
+            }
+        };
+
+        // Start app when user clicks to play audio
+        clickToPlay.addEventListener('click', window.startApp);
+        
+        // Auto-start app if audio is already playing
+        if (isAudioPlaying) {
+            window.startApp();
+        }
+        
+    </script>
+</body>
+</html>
