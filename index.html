@@ -558,16 +558,36 @@
                 createParticlesFromImage(img); 
                 // Bắt đầu camera sau khi audio đã sẵn sàng
                 if (isAudioLoaded) {
-                    cameraUtils.start();
+                    startCamera();
                 } else {
-                    setTimeout(() => cameraUtils.start(), 1000);
+                    setTimeout(() => startCamera(), 1000);
                 }
             };
             img.onerror = () => { 
                 console.error("Lỗi tạo bánh kem ánh sáng sao");
                 // Vẫn bắt đầu camera nếu có lỗi
-                cameraUtils.start();
+                startCamera();
             };
+        }
+
+        // SỬA LỖI: Thêm hàm startCamera
+        function startCamera() {
+            if (window.cameraUtils) {
+                window.cameraUtils.start();
+            } else {
+                console.log("Camera utils chưa được khởi tạo");
+                // Tạo camera utils nếu chưa có
+                if (videoElement && hands) {
+                    window.cameraUtils = new Camera(videoElement, { 
+                        onFrame: async () => { 
+                            await hands.send({image: videoElement}); 
+                        }, 
+                        width: 320, 
+                        height: 240 
+                    });
+                    window.cameraUtils.start();
+                }
+            }
         }
 
         function triggerVideo() {
@@ -757,7 +777,7 @@
             
             starSystem = createStars();
 
-            // Thay đổi 1: Gọi hàm tạo bánh kem ánh sáng sao thay vì loadDefaultImage
+            // Thay đổi 1: Gọi hàm tạo bánh kem ánh sáng sao
             loadStarlightCake();
             animate();
         }
@@ -894,8 +914,6 @@
         hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         hands.onResults(onResults);
 
-        let cameraUtils;
-
         function animate() {
             requestAnimationFrame(animate);
 
@@ -929,7 +947,15 @@
             if (!window.appInitialized) {
                 initThree();
                 window.appInitialized = true;
-                cameraUtils = new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 });
+                
+                // Khởi tạo camera utils
+                window.cameraUtils = new Camera(videoElement, { 
+                    onFrame: async () => { 
+                        await hands.send({image: videoElement}); 
+                    }, 
+                    width: 320, 
+                    height: 240 
+                });
             }
         };
 
