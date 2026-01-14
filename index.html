@@ -10,9 +10,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; background-color: #0a0a1a; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #020205; font-family: 'Segoe UI', sans-serif; }
         #canvas-container { width: 100vw; height: 100vh; }
         
+        input[type="file"] { display: none; }
+
         #camera-wrapper {
             position: absolute; bottom: 20px; left: 20px;
             width: 160px; height: 120px;
@@ -77,6 +79,7 @@
         #brightness-panel label { font-size: 0.9rem; font-weight: bold; color: #FFD700; display: block; margin-bottom: 10px; }
         input[type=range] { width: 100%; cursor: pointer; accent-color: #FFD700; }
 
+        /* Audio controls */
         #audio-controls {
             position: fixed;
             top: 20px;
@@ -168,28 +171,9 @@
             transform: translate(-50%, -50%) scale(1.05);
             box-shadow: 0 0 40px rgba(255, 215, 0, 0.5);
         }
-
-        #info-text {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-            z-index: 10001;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 8px 12px;
-            border-radius: 6px;
-            max-width: 300px;
-        }
     </style>
 </head>
 <body>
-
-    <div id="info-text">
-        ✨ Hiển thị 1-5 ngón tay: Đổi số<br>
-        ✊ Nắm tay: Hiển thị thông điệp<br>
-        ✊✊ Hai nắm tay giữ 1 giây: Phát video
-    </div>
 
     <div id="click-to-play">
         <div style="font-size: 2rem; margin-bottom: 10px;">🎵</div>
@@ -225,8 +209,9 @@
     <video id="input-video" style="display:none"></video>
     <div id="canvas-container"></div>
 
-    <!-- Audio element -->
+    <!-- Audio element - CHỈ CẦN audio.mp3 -->
     <audio id="birthday-audio" loop>
+        <!-- Chỉ cần file audio.mp3 trong cùng thư mục -->
         <source src="audio.mp3" type="audio/mpeg">
         Trình duyệt của bạn không hỗ trợ thẻ audio.
     </audio>
@@ -240,10 +225,10 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
         const CONFIG = {
-            sampleResolution: 600,
-            particleSize: 3.5,
+            sampleResolution: 400,
+            particleSize: 2.8,
             imageGap: 1.8,
-            depthMultiplier: 25.0,
+            depthMultiplier: 20.0,
             morphSpeed: 0.08, 
             HOLD_DURATION: 1000,
             FW_SCALE: 9.0, 
@@ -437,11 +422,11 @@
         });
 
         let scene, camera, renderer, controls, particles;
-        let particleAttributes = { positions: null, targets: null, cakePositions: null, colors: null, birthdayTargets: null };
+        let particleAttributes = { positions: null, targets: null, photoPositions: null, colors: null, birthdayTargets: null };
         const numberCache = {}; 
         let isInitialized = false;
-        let currentMode = 'CAKE'; 
-        let targetContent = 'CAKE'; 
+        let currentMode = 'PHOTO'; 
+        let targetContent = 'PHOTO'; 
         let holdStartTime = 0;
         
         const fireworks = [];
@@ -454,214 +439,135 @@
         
         let isVideoPlaying = false;
 
-        // Tạo bánh kem ánh sáng sao
-        function createStarlightCake() {
-            console.log("Tạo bánh kem ánh sáng sao...");
+        // Thay đổi 1: Tạo bánh kem ánh sáng sao thay vì load hình ảnh
+        function loadStarlightCake() {
+            console.log("Đang tạo bánh kem ánh sáng sao...");
             
-            // Tạo dữ liệu bánh kem với ánh sáng sao
-            const cakeData = generateCakeGeometry();
-            
-            // Tạo particles từ dữ liệu bánh kem
-            createParticlesFromCakeData(cakeData);
-            
-            // Bắt đầu camera sau khi audio đã sẵn sàng
-            if (isAudioLoaded) {
-                cameraUtils.start();
-            } else {
-                setTimeout(() => cameraUtils.start(), 1000);
-            }
-        }
-
-        function generateCakeGeometry() {
-            const points = [];
-            const colors = [];
-            
-            // Màu sắc cho bánh kem ánh sáng sao
-            const cakeColors = [
-                new THREE.Color(0xFFD700), // Vàng
-                new THREE.Color(0xFF69B4), // Hồng
-                new THREE.Color(0x9370DB), // Tím
-                new THREE.Color(0x00CED1), // Ngọc lam
-                new THREE.Color(0xFFA500)  // Cam
-            ];
-            
-            // Tầng bánh dưới cùng (lớn nhất)
-            const bottomRadius = 150;
-            const bottomHeight = 40;
-            const layers = 5;
-            
-            // Tạo các tầng bánh
-            for (let layer = 0; layer < layers; layer++) {
-                const radius = bottomRadius - layer * 25;
-                const height = -100 + layer * 35;
-                const color = cakeColors[layer % cakeColors.length];
-                
-                // Tạo mặt trên của tầng bánh (ánh sáng sao)
-                for (let i = 0; i < 200; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const r = Math.sqrt(Math.random()) * radius * 0.8;
-                    const x = Math.cos(angle) * r;
-                    const y = height + bottomHeight/2;
-                    const z = Math.sin(angle) * r;
-                    
-                    points.push(x, y, z);
-                    colors.push(color.r, color.g, color.b);
-                }
-                
-                // Tạo mặt xung quanh của tầng bánh
-                for (let i = 0; i < 150; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const heightRatio = Math.random();
-                    const x = Math.cos(angle) * radius;
-                    const y = height - bottomHeight/2 + heightRatio * bottomHeight;
-                    const z = Math.sin(angle) * radius;
-                    
-                    points.push(x, y, z);
-                    colors.push(color.r * 0.8, color.g * 0.8, color.b * 0.8);
-                }
-            }
-            
-            // Tạo ngọn nến
-            const candleHeight = 80;
-            const candleRadius = 8;
-            const candleCount = 18;
-            
-            for (let c = 0; c < candleCount; c++) {
-                const angle = (c / candleCount) * Math.PI * 2;
-                const radius = 50;
-                const baseX = Math.cos(angle) * radius;
-                const baseY = 40;
-                const baseZ = Math.sin(angle) * radius;
-                
-                // Thân nến (trắng)
-                for (let i = 0; i < 30; i++) {
-                    const heightRatio = Math.random();
-                    const x = baseX + (Math.random() - 0.5) * candleRadius;
-                    const y = baseY + heightRatio * candleHeight;
-                    const z = baseZ + (Math.random() - 0.5) * candleRadius;
-                    
-                    points.push(x, y, z);
-                    colors.push(1, 1, 1); // Màu trắng
-                }
-                
-                // Ngọn lửa nến (vàng-cam)
-                for (let i = 0; i < 20; i++) {
-                    const x = baseX + (Math.random() - 0.5) * candleRadius;
-                    const y = baseY + candleHeight + Math.random() * 20;
-                    const z = baseZ + (Math.random() - 0.5) * candleRadius;
-                    
-                    // Màu lửa (vàng đến cam)
-                    const flameColor = new THREE.Color().setHSL(
-                        0.08 + Math.random() * 0.05, // Hue: vàng-cam
-                        0.9, // Saturation cao
-                        0.7 + Math.random() * 0.3 // Độ sáng
-                    );
-                    
-                    points.push(x, y, z);
-                    colors.push(flameColor.r, flameColor.g, flameColor.b);
-                }
-            }
-            
-            // Thêm các hạt ánh sáng sao lấp lánh xung quanh bánh
-            for (let i = 0; i < 500; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const distance = 200 + Math.random() * 100;
-                const height = -50 + Math.random() * 150;
-                const x = Math.cos(angle) * distance;
-                const y = height;
-                const z = Math.sin(angle) * distance;
-                
-                points.push(x, y, z);
-                
-                // Màu ngẫu nhiên ánh sáng sao
-                const starColor = new THREE.Color().setHSL(
-                    Math.random(), // Hue ngẫu nhiên
-                    0.8 + Math.random() * 0.2, // Saturation cao
-                    0.8 + Math.random() * 0.2 // Độ sáng cao
-                );
-                colors.push(starColor.r, starColor.g, starColor.b);
-            }
-            
-            return { points, colors };
-        }
-
-        function createParticlesFromCakeData(cakeData) {
-            const count = cakeData.points.length / 3;
-            const pos = new Float32Array(cakeData.points);
-            const col = new Float32Array(cakeData.colors);
-            const tar = new Float32Array(pos); // Vị trí đích giống vị trí ban đầu
-            
-            particleAttributes.positions = pos;
-            particleAttributes.targets = tar;
-            particleAttributes.cakePositions = new Float32Array(tar);
-            particleAttributes.colors = col;
-            
-            if (particles) {
-                scene.remove(particles);
-            }
-            
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.BufferAttribute(particleAttributes.positions, 3));
-            geo.setAttribute('color', new THREE.BufferAttribute(particleAttributes.colors, 3));
-            
-            // Tạo texture cho ánh sáng sao lấp lánh
-            const starTexture = createStarGlowTexture();
-            
-            particles = new THREE.Points(geo, new THREE.PointsMaterial({
-                size: CONFIG.particleSize,
-                map: starTexture,
-                vertexColors: true,
-                transparent: true,
-                opacity: 1.0,
-                depthWrite: true,
-                sizeAttenuation: true,
-                blending: THREE.AdditiveBlending // Hiệu ứng ánh sáng cộng
-            }));
-            
-            scene.add(particles);
-            controls.reset();
-            camera.position.set(0, 0, 600);
-            
-            isInitialized = true;
-            generateAllNumbers(count);
-            particleAttributes.birthdayTargets = createBirthdayPoints(count);
-        }
-
-        function createStarGlowTexture() {
+            // Tạo canvas ảo để vẽ bánh kem
             const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
             const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 400;
             
-            // Tạo gradient cho ánh sáng sao
-            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-            gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.6)');
-            gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.2)');
-            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            // Vẽ nền đen
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 64, 64);
+            // Vẽ bánh kem (hình tròn với gradient)
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 150;
             
-            // Thêm các tia sáng nhỏ
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.lineWidth = 1;
+            // Tầng bánh dưới cùng
+            const gradient1 = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+            gradient1.addColorStop(0, '#FFD700'); // Vàng tươi ở trung tâm
+            gradient1.addColorStop(0.5, '#B8860B'); // Vàng đậm
+            gradient1.addColorStop(1, '#8B4513'); // Nâu
             
-            for (let i = 0; i < 8; i++) {
-                const angle = (i / 8) * Math.PI * 2;
-                const length = 20;
-                const x2 = 32 + Math.cos(angle) * length;
-                const y2 = 32 + Math.sin(angle) * length;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient1;
+            ctx.fill();
+            
+            // Tầng bánh trên
+            const gradient2 = ctx.createRadialGradient(centerX, centerY - 40, 0, centerX, centerY - 40, radius * 0.7);
+            gradient2.addColorStop(0, '#FF69B4'); // Hồng
+            gradient2.addColorStop(0.6, '#FF1493'); // Hồng đậm
+            gradient2.addColorStop(1, '#8B008B'); // Tím đậm
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 40, radius * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = gradient2;
+            ctx.fill();
+            
+            // Vẽ các ngọn nến
+            const candleCount = 18;
+            for (let i = 0; i < candleCount; i++) {
+                const angle = (i / candleCount) * Math.PI * 2;
+                const candleX = centerX + Math.cos(angle) * (radius * 0.6);
+                const candleY = centerY - 40 + Math.sin(angle) * (radius * 0.6);
+                
+                // Thân nến
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(candleX - 3, candleY - 60, 6, 40);
+                
+                // Ngọn lửa
+                const flameGradient = ctx.createRadialGradient(
+                    candleX, candleY - 65, 0,
+                    candleX, candleY - 65, 10
+                );
+                flameGradient.addColorStop(0, '#FFFF00'); // Vàng
+                flameGradient.addColorStop(0.5, '#FFA500'); // Cam
+                flameGradient.addColorStop(1, '#FF4500'); // Cam đỏ
                 
                 ctx.beginPath();
-                ctx.moveTo(32, 32);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
+                ctx.arc(candleX, candleY - 65, 8, 0, Math.PI * 2);
+                ctx.fillStyle = flameGradient;
+                ctx.fill();
+                
+                // Tia sáng từ ngọn lửa
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+                ctx.lineWidth = 1;
+                for (let j = 0; j < 8; j++) {
+                    const rayAngle = (j / 8) * Math.PI * 2;
+                    const rayLength = 15;
+                    ctx.beginPath();
+                    ctx.moveTo(candleX, candleY - 65);
+                    ctx.lineTo(
+                        candleX + Math.cos(rayAngle) * rayLength,
+                        candleY - 65 + Math.sin(rayAngle) * rayLength
+                    );
+                    ctx.stroke();
+                }
             }
             
-            const texture = new THREE.Texture(canvas);
-            texture.needsUpdate = true;
-            return texture;
+            // Thêm các ánh sáng sao lấp lánh
+            for (let i = 0; i < 200; i++) {
+                const starX = Math.random() * canvas.width;
+                const starY = Math.random() * canvas.height;
+                const starSize = Math.random() * 3 + 1;
+                const alpha = Math.random() * 0.8 + 0.2;
+                
+                ctx.beginPath();
+                ctx.arc(starX, starY, starSize, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fill();
+                
+                // Hiệu ứng tia sáng cho sao lớn
+                if (starSize > 2) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
+                    ctx.lineWidth = 1;
+                    for (let j = 0; j < 4; j++) {
+                        const angle = (j / 4) * Math.PI * 2;
+                        const length = starSize * 2;
+                        ctx.beginPath();
+                        ctx.moveTo(starX, starY);
+                        ctx.lineTo(
+                            starX + Math.cos(angle) * length,
+                            starY + Math.sin(angle) * length
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // Tạo hình ảnh từ canvas
+            const img = new Image();
+            img.src = canvas.toDataURL();
+            img.onload = () => { 
+                createParticlesFromImage(img); 
+                // Bắt đầu camera sau khi audio đã sẵn sàng
+                if (isAudioLoaded) {
+                    cameraUtils.start();
+                } else {
+                    setTimeout(() => cameraUtils.start(), 1000);
+                }
+            };
+            img.onerror = () => { 
+                console.error("Lỗi tạo bánh kem ánh sáng sao");
+                // Vẫn bắt đầu camera nếu có lỗi
+                cameraUtils.start();
+            };
         }
 
         function triggerVideo() {
@@ -694,6 +600,12 @@
         }
 
         closeArea.addEventListener('click', stopVideo);
+
+        function createSolidCircleTexture() {
+            const c=document.createElement('canvas'); c.width=64; c.height=64; const ctx=c.getContext('2d');
+            ctx.beginPath(); ctx.arc(32,32,30,0,Math.PI*2); ctx.fillStyle='#FFFFFF'; ctx.fill();
+            const t=new THREE.Texture(c); t.needsUpdate=true; return t;
+        }
 
         function getGlowParticleTexture() {
             const c = document.createElement('canvas'); c.width=32; c.height=32; const ctx=c.getContext('2d');
@@ -835,7 +747,7 @@
         }
 
         function initThree() {
-            scene = new THREE.Scene(); scene.background = new THREE.Color(0x0a0a1a); scene.fog=new THREE.FogExp2(0x0a0a1a, 0.0003);
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x020205); scene.fog=new THREE.FogExp2(0x020205, 0.0003);
             camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 10000); camera.position.set(0,0,1000);
             renderer = new THREE.WebGLRenderer({antialias:true}); renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('canvas-container').appendChild(renderer.domElement);
@@ -845,8 +757,37 @@
             
             starSystem = createStars();
 
-            createStarlightCake();
+            // Thay đổi 1: Gọi hàm tạo bánh kem ánh sáng sao thay vì loadDefaultImage
+            loadStarlightCake();
             animate();
+        }
+
+        function createParticlesFromImage(image) {
+            const maxDim=CONFIG.sampleResolution; let w,h; if(image.width>image.height){w=maxDim;h=Math.round(maxDim*(image.height/image.width));}else{h=maxDim;w=Math.round(maxDim*(image.width/image.height));}
+            const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h; const ctx=canvas.getContext('2d'); ctx.drawImage(image,0,0,w,h);
+            const imgData=ctx.getImageData(0,0,w,h).data; const count=w*h; const pos=new Float32Array(count*3); const col=new Float32Array(count*3); const tar=new Float32Array(count*3);
+            let vIdx=0; const cTex=createSolidCircleTexture();
+            
+            for(let i=0;i<count;i++){
+                if(imgData[i*4+3]<20)continue;
+                const c=i%w; const r_idx=Math.floor(i/w);
+                const x=(c-w/2)*CONFIG.imageGap; const y=-(r_idx-h/2)*CONFIG.imageGap; 
+                const z=(1.0-(imgData[i*4]/255))*CONFIG.depthMultiplier;
+                pos[vIdx*3]=x; pos[vIdx*3+1]=y; pos[vIdx*3+2]=z; tar[vIdx*3]=x; tar[vIdx*3+1]=y; tar[vIdx*3+2]=z;
+                col[vIdx*3]=imgData[i*4]/255; col[vIdx*3+1]=imgData[i*4+1]/255; col[vIdx*3+2]=imgData[i*4+2]/255; vIdx++;
+            }
+            particleAttributes.positions=pos.slice(0,vIdx*3); particleAttributes.targets=tar.slice(0,vIdx*3); particleAttributes.photoPositions=new Float32Array(particleAttributes.targets); particleAttributes.colors=col.slice(0,vIdx*3);
+            if(particles){scene.remove(particles);}
+            const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(particleAttributes.positions,3)); geo.setAttribute('color',new THREE.BufferAttribute(particleAttributes.colors,3));
+            
+            particles = new THREE.Points(geo, new THREE.PointsMaterial({
+                size: CONFIG.particleSize, map: cTex, vertexColors: true, transparent: true, opacity: 1.0, depthWrite: true, sizeAttenuation: true
+            }));
+            
+            scene.add(particles); controls.reset(); camera.position.set(0,0,Math.max(w,h)*CONFIG.imageGap);
+            isInitialized=true;
+            generateAllNumbers(vIdx);
+            particleAttributes.birthdayTargets = createBirthdayPoints(vIdx);
         }
 
         function generateAllNumbers(total) {
@@ -857,7 +798,7 @@
             }
         }
         
-        // Đã sửa thành "18/01 HAPPY BIRTHDAY NGÔ TIỂU MY"
+        // Thay đổi 2: Đã sửa thành "18/01 HAPPY BIRTHDAY NGÔ TIỂU MY"
         function createBirthdayPoints(total){
             const w=1000; const h=450; const c=document.createElement('canvas'); c.width=w; c.height=h;
             const ctx=c.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -935,15 +876,15 @@
                         } 
                     }
                     else { 
-                        if (currentMode !== 'CAKE') { 
-                            currentMode = 'CAKE'; 
-                            particleAttributes.targets = particleAttributes.cakePositions; 
+                        if (currentMode !== 'PHOTO') { 
+                            currentMode = 'PHOTO'; 
+                            particleAttributes.targets = particleAttributes.photoPositions; 
                         } 
                     }
                 } else {
-                    if (currentMode !== 'CAKE') { 
-                        currentMode = 'CAKE'; 
-                        particleAttributes.targets = particleAttributes.cakePositions; 
+                    if (currentMode !== 'PHOTO') { 
+                        currentMode = 'PHOTO'; 
+                        particleAttributes.targets = particleAttributes.photoPositions; 
                     }
                 }
             }
@@ -952,6 +893,8 @@
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         hands.onResults(onResults);
+
+        let cameraUtils;
 
         function animate() {
             requestAnimationFrame(animate);
@@ -966,23 +909,6 @@
             for (let i = fireworks.length - 1; i >= 0; i--) {
                 fireworks[i].update();
                 if (fireworks[i].isDead) fireworks.splice(i, 1);
-            }
-
-            // Tạo hiệu ứng lấp lánh cho các hạt bánh kem
-            if(particles && particleAttributes.colors && !isVideoPlaying) {
-                const colors = particles.geometry.attributes.color.array;
-                const time = Date.now() * 0.001;
-                
-                for(let i = 0; i < colors.length; i += 3) {
-                    // Tạo hiệu ứng nhấp nháy ngẫu nhiên
-                    if(Math.random() < 0.01) {
-                        const flicker = 0.7 + Math.random() * 0.3;
-                        colors[i] *= flicker;
-                        colors[i+1] *= flicker;
-                        colors[i+2] *= flicker;
-                    }
-                }
-                particles.geometry.attributes.color.needsUpdate = true;
             }
 
             if(!isVideoPlaying) {
